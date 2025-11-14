@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapports - GestionStock Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #FAFAFA;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #1B4332, #52796F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .nav-item {
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover {
+            background: #f0fdf4;
+            color: #1B4332;
+        }
+        .nav-item.active {
+            background: #1B4332;
+            color: white;
+        }
+        .report-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .report-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        .metric-highlight {
+            background: linear-gradient(135deg, #1B4332, #52796F);
+            color: white;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background: #1B4332;
+            color: white;
+        }
+        .report-section {
+            page-break-after: always;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .report-section { page-break-after: always; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-800 to-green-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-boxes text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">GestionStock Pro</h1>
+                        <p class="text-xs text-gray-500" id="companyName">Rapports</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bars text-gray-600"></i>
+                    </button>
+                    <div class="hidden md:flex items-center space-x-3">
+                        <span class="text-sm text-gray-600" id="currentDate"></span>
+                        <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-gray-600 text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white w-64 border-r border-gray-200 hidden md:block">
+            <div class="p-4">
+                <nav class="space-y-2">
+                    <a href="dashboard.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-tachometer-alt mr-3"></i>
+                        Tableau de bord
+                    </a>
+                    <a href="products.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-boxes mr-3"></i>
+                        Produits
+                    </a>
+                    <a href="stock.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-warehouse mr-3"></i>
+                        Gestion du stock
+                    </a>
+                    <a href="invoicing.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-file-invoice mr-3"></i>
+                        Facturation
+                    </a>
+                    <a href="reports.html" class="nav-item active flex items-center px-4 py-3 rounded-lg text-sm font-medium">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        Rapports
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-6 lg:p-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold gradient-text mb-2">Rapports et analyses</h2>
+                        <p class="text-gray-600">Analyses détaillées et export de vos données</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        <button id="printReportBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-print mr-2"></i>Imprimer
+                        </button>
+                        <button id="exportReportBtn" class="bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Exporter PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Period Selection -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 lg:mb-0">Période d'analyse</h3>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                        <select id="periodSelect" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="7">7 derniers jours</option>
+                            <option value="30" selected>30 derniers jours</option>
+                            <option value="90">3 derniers mois</option>
+                            <option value="365">12 derniers mois</option>
+                            <option value="custom">Période personnalisée</option>
+                        </select>
+                        <div id="customPeriod" class="hidden flex space-x-2">
+                            <input type="date" id="startDate" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <input type="date" id="endDate" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        </div>
+                        <button id="generateReportBtn" class="bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-chart-line mr-2"></i>Générer
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="metric-highlight p-6 rounded-xl">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-green-100">Chiffre d'affaires</p>
+                            <p class="text-2xl font-bold text-white" id="reportRevenue">0 FCFA</p>
+                            <p class="text-xs text-green-200 mt-1">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="revenueChange">+0%</span> vs période précédente
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-white text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Nombre de ventes</p>
+                            <p class="text-2xl font-bold text-gray-900" id="reportSalesCount">0</p>
+                            <p class="text-xs text-blue-600 mt-1">
+                                <i class="fas fa-shopping-cart mr-1"></i>
+                                Transactions réalisées
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Panier moyen</p>
+                            <p class="text-2xl font-bold text-gray-900" id="reportAverageCart">0 FCFA</p>
+                            <p class="text-xs text-purple-600 mt-1">
+                                <i class="fas fa-calculator mr-1"></i>
+                                Valeur moyenne
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calculator text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Marge bénéficiaire</p>
+                            <p class="text-2xl font-bold text-gray-900" id="reportProfitMargin">0%</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-percentage mr-1"></i>
+                                Bénéfice net
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-percentage text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Sales Trend Chart -->
+                <div class="chart-container p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Évolution des ventes</h3>
+                        <div class="flex space-x-2">
+                            <button class="chart-type-btn active px-3 py-1 text-sm bg-green-800 text-white rounded" data-type="line">Ligne</button>
+                            <button class="chart-type-btn px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50" data-type="bar">Barres</button>
+                        </div>
+                    </div>
+                    <div id="salesTrendChart" style="height: 300px;"></div>
+                </div>
+
+                <!-- Product Performance Chart -->
+                <div class="chart-container p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance par produit</h3>
+                    <div id="productPerformanceChart" style="height: 300px;"></div>
+                </div>
+            </div>
+
+            <!-- Detailed Reports -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Stock Report -->
+                <div class="report-card p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">État des stocks</h3>
+                    <div class="space-y-3" id="stockReport">
+                        <!-- Dynamic content -->
+                    </div>
+                    <button onclick="reportsManager.exportStockReport()" class="mt-4 w-full bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                        <i class="fas fa-download mr-2"></i>Exporter rapport stock
+                    </button>
+                </div>
+
+                <!-- Top Customers -->
+                <div class="report-card p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Meilleurs clients</h3>
+                    <div class="space-y-3" id="customersReport">
+                        <!-- Dynamic content -->
+                    </div>
+                    <button onclick="reportsManager.exportCustomersReport()" class="mt-4 w-full bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                        <i class="fas fa-download mr-2"></i>Exporter rapport clients
+                    </button>
+                </div>
+
+                <!-- Category Analysis -->
+                <div class="report-card p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Analyse par catégorie</h3>
+                    <div class="space-y-3" id="categoryReport">
+                        <!-- Dynamic content -->
+                    </div>
+                    <button onclick="reportsManager.exportCategoryReport()" class="mt-4 w-full bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                        <i class="fas fa-download mr-2"></i>Exporter rapport catégories
+                    </button>
+                </div>
+            </div>
+
+            <!-- Full Report Preview (for PDF export) -->
+            <div id="fullReport" class="hidden bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                <!-- Report content will be generated here -->
+            </div>
+        </main>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // Reports Management
+        class ReportsManager {
+            constructor() {
+                this.products = [];
+                this.sales = [];
+                this.stockMovements = [];
+                this.company = null;
+                this.currentPeriod = 30;
+                this.charts = {};
+                this.init();
+            }
+
+            init() {
+                this.checkAuthentication();
+                this.loadData();
+                this.setupEventListeners();
+                this.updateCurrentDate();
+                this.generateReport();
+            }
+
+            checkAuthentication() {
+                const companyData = localStorage.getItem('gestionstock_company');
+                if (!companyData) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                this.company = JSON.parse(companyData);
+                document.getElementById('companyName').textContent = this.company.name;
+            }
+
+            updateCurrentDate() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                document.getElementById('currentDate').textContent = now.toLocaleDateString('fr-FR', options);
+            }
+
+            loadData() {
+                const companyId = this.company.id;
+                this.products = JSON.parse(localStorage.getItem(`gestionstock_products_${companyId}`) || '[]');
+                this.sales = JSON.parse(localStorage.getItem(`gestionstock_sales_${companyId}`) || '[]');
+                this.stockMovements = JSON.parse(localStorage.getItem(`gestionstock_stockMovements_${companyId}`) || '[]');
+            }
+
+            setupEventListeners() {
+                // Period selection
+                document.getElementById('periodSelect').addEventListener('change', (e) => {
+                    if (e.target.value === 'custom') {
+                        document.getElementById('customPeriod').classList.remove('hidden');
+                    } else {
+                        document.getElementById('customPeriod').classList.add('hidden');
+                        this.currentPeriod = parseInt(e.target.value);
+                        this.generateReport();
+                    }
+                });
+
+                // Custom period
+                document.getElementById('startDate').addEventListener('change', () => this.generateReport());
+                document.getElementById('endDate').addEventListener('change', () => this.generateReport());
+
+                // Generate report
+                document.getElementById('generateReportBtn').addEventListener('click', () => this.generateReport());
+
+                // Export functions
+                document.getElementById('printReportBtn').addEventListener('click', () => this.printReport());
+                document.getElementById('exportReportBtn').addEventListener('click', () => this.exportReport());
+
+                // Chart type buttons
+                document.querySelectorAll('.chart-type-btn').forEach(btn => {
+                    btn.addEventListener('click', () => this.switchChartType(btn.dataset.type));
+                });
+
+                // Mobile menu
+                document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                    const sidebar = document.getElementById('sidebar');
+                    sidebar.classList.toggle('hidden');
+                });
+            }
+
+            generateReport() {
+                const periodSelect = document.getElementById('periodSelect');
+                let startDate, endDate;
+
+                if (periodSelect.value === 'custom') {
+                    startDate = new Date(document.getElementById('startDate').value);
+                    endDate = new Date(document.getElementById('endDate').value);
+                    if (!startDate || !endDate) return;
+                } else {
+                    endDate = new Date();
+                    startDate = new Date();
+                    startDate.setDate(startDate.getDate() - this.currentPeriod);
+                }
+
+                this.updateMetrics(startDate, endDate);
+                this.initializeCharts(startDate, endDate);
+                this.generateDetailedReports(startDate, endDate);
+            }
+
+            updateMetrics(startDate, endDate) {
+                const filteredSales = this.sales.filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    return saleDate >= startDate && saleDate <= endDate;
+                });
+
+                // Revenue
+                const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+                document.getElementById('reportRevenue').textContent = this.formatCurrency(totalRevenue);
+
+                // Sales count
+                document.getElementById('reportSalesCount').textContent = filteredSales.length;
+
+                // Average cart
+                const averageCart = filteredSales.length > 0 ? totalRevenue / filteredSales.length : 0;
+                document.getElementById('reportAverageCart').textContent = this.formatCurrency(averageCart);
+
+                // Profit margin
+                const totalCost = filteredSales.reduce((sum, sale) => {
+                    return sum + sale.items.reduce((itemSum, item) => {
+                        const product = this.products.find(p => p.id === item.productId);
+                        return itemSum + (product ? product.purchasePrice * item.quantity : 0);
+                    }, 0);
+                }, 0);
+                const profitMargin = totalRevenue > 0 ? ((totalRevenue - totalCost) / totalRevenue * 100).toFixed(1) : 0;
+                document.getElementById('reportProfitMargin').textContent = profitMargin + '%';
+
+                // Calculate change vs previous period
+                const previousPeriodStart = new Date(startDate);
+                previousPeriodStart.setDate(previousPeriodStart.getDate() - this.currentPeriod);
+                const previousPeriodEnd = new Date(startDate);
+
+                const previousSales = this.sales.filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    return saleDate >= previousPeriodStart && saleDate <= previousPeriodEnd;
+                });
+                const previousRevenue = previousSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+                const revenueChange = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue * 100).toFixed(1) : 0;
+                document.getElementById('revenueChange').textContent = (revenueChange > 0 ? '+' : '') + revenueChange + '%';
+            }
+
+            initializeCharts(startDate, endDate) {
+                this.initializeSalesTrendChart(startDate, endDate);
+                this.initializeProductPerformanceChart(startDate, endDate);
+            }
+
+            initializeSalesTrendChart(startDate, endDate) {
+                const chartDom = document.getElementById('salesTrendChart');
+                this.charts.salesTrend = echarts.init(chartDom);
+
+                // Generate daily sales data
+                const dailySales = {};
+                const filteredSales = this.sales.filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    return saleDate >= startDate && saleDate <= endDate;
+                });
+
+                filteredSales.forEach(sale => {
+                    const date = new Date(sale.date).toLocaleDateString('fr-FR');
+                    dailySales[date] = (dailySales[date] || 0) + sale.totalAmount;
+                });
+
+                const dates = Object.keys(dailySales).sort((a, b) => new Date(a) - new Date(b));
+                const values = dates.map(date => dailySales[date]);
+
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: '{b}: {c} FCFA'
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: dates,
+                        axisLabel: {
+                            fontSize: 10,
+                            rotate: 45
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            formatter: '{value} FCFA',
+                            fontSize: 10
+                        }
+                    },
+                    series: [{
+                        data: values,
+                        type: 'line',
+                        smooth: true,
+                        lineStyle: {
+                            color: '#1B4332',
+                            width: 3
+                        },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0,
+                                y: 0,
+                                x2: 0,
+                                y2: 1,
+                                colorStops: [{
+                                    offset: 0, color: 'rgba(27, 67, 50, 0.3)'
+                                }, {
+                                    offset: 1, color: 'rgba(27, 67, 50, 0.05)'
+                                }]
+                            }
+                        },
+                        itemStyle: {
+                            color: '#1B4332'
+                        }
+                    }],
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '15%',
+                        containLabel: true
+                    }
+                };
+
+                this.charts.salesTrend.setOption(option);
+            }
+
+            initializeProductPerformanceChart(startDate, endDate) {
+                const chartDom = document.getElementById('productPerformanceChart');
+                this.charts.productPerformance = echarts.init(chartDom);
+
+                const filteredSales = this.sales.filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    return saleDate >= startDate && saleDate <= endDate;
+                });
+
+                // Calculate product performance
+                const productPerformance = {};
+                filteredSales.forEach(sale => {
+                    sale.items.forEach(item => {
+                        if (!productPerformance[item.productName]) {
+                            productPerformance[item.productName] = {
+                                quantity: 0,
+                                revenue: 0
+                            };
+                        }
+                        productPerformance[item.productName].quantity += item.quantity;
+                        productPerformance[item.productName].revenue += item.total;
+                    });
+                });
+
+                // Sort by revenue and take top 8
+                const sortedProducts = Object.entries(productPerformance)
+                    .sort(([,a], [,b]) => b.revenue - a.revenue)
+                    .slice(0, 8);
+
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
+                        },
+                        formatter: function(params) {
+                            const data = params[0];
+                            return `${data.name}<br/>Quantité: ${data.data.quantity}<br/>Chiffre d'affaires: ${data.data.revenue} FCFA`;
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: sortedProducts.map(([name]) => name),
+                        axisLabel: {
+                            fontSize: 10,
+                            rotate: 45
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            formatter: '{value} FCFA',
+                            fontSize: 10
+                        }
+                    },
+                    series: [{
+                        type: 'bar',
+                        data: sortedProducts.map(([, data]) => ({
+                            value: data.revenue,
+                            quantity: data.quantity,
+                            revenue: data.revenue
+                        })),
+                        itemStyle: {
+                            color: '#1B4332'
+                        }
+                    }],
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '15%',
+                        containLabel: true
+                    }
+                };
+
+                this.charts.productPerformance.setOption(option);
+            }
+
+            generateDetailedReports(startDate, endDate) {
+                this.generateStockReport();
+                this.generateCustomersReport(startDate, endDate);
+                this.generateCategoryReport(startDate, endDate);
+            }
+
+            generateStockReport() {
+                const container = document.getElementById('stockReport');
+                
+                const totalProducts = this.products.length;
+                const lowStockProducts = this.products.filter(p => p.stock <= p.lowStockThreshold).length;
+                const totalValue = this.products.reduce((sum, product) => sum + (product.stock * product.purchasePrice), 0);
+
+                container.innerHTML = `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Total produits:</span>
+                        <span class="font-semibold">${totalProducts}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Stock faible:</span>
+                        <span class="font-semibold text-red-600">${lowStockProducts}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Valeur totale:</span>
+                        <span class="font-semibold">${this.formatCurrency(totalValue)}</span>
+                    </div>
+                    ${this.products.slice(0, 5).map(product => `
+                        <div class="flex justify-between items-center py-2 text-xs">
+                            <span class="text-gray-600 truncate">${product.name}:</span>
+                            <span class="font-medium ${product.stock <= product.lowStockThreshold ? 'text-red-600' : 'text-green-600'}">${product.stock}</span>
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            generateCustomersReport(startDate, endDate) {
+                const container = document.getElementById('customersReport');
+                
+                const filteredSales = this.sales.filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    return saleDate >= startDate && saleDate <= endDate;
+                });
+
+                const customerStats = {};
+                filteredSales.forEach(sale => {
+                    const customerName = sale.customer.name;
+                    if (!customerStats[customerName]) {
+                        customerStats[customerName] = {
+                            purchases: 0,
+                            totalAmount: 0
+                        };
+                    }
+                    customerStats[customerName].purchases++;
+                    customerStats[customerName].totalAmount += sale.totalAmount;
+                });
+
+                const topCustomers = Object.entries(customerStats)
+                    .sort(([,a], [,b]) => b.totalAmount - a.totalAmount)
+                    .slice(0, 5);
+
+                container.innerHTML = `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Clients actifs:</span>
+                        <span class="font-semibold">${Object.keys(customerStats).length}</span>
+                    </div>
+                    ${topCustomers.map(([name, stats]) => `
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <div>
+                                <span class="text-sm font-medium">${name}</span>
+                                <div class="text-xs text-gray-500">${stats.purchases} achat(s)</div>
+                            </div>
+                            <span class="font-semibold">${this.formatCurrency(stats.totalAmount)}</span>
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            generateCategoryReport(startDate, endDate) {
+                const container = document.getElementById('categoryReport');
+                
+                const filteredSales = this.sales.filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    return saleDate >= startDate && saleDate <= endDate;
+                });
+
+                const categoryStats = {};
+                filteredSales.forEach(sale => {
+                    sale.items.forEach(item => {
+                        const product = this.products.find(p => p.id === item.productId);
+                        if (product) {
+                            const category = product.category;
+                            if (!categoryStats[category]) {
+                                categoryStats[category] = {
+                                    items: 0,
+                                    revenue: 0
+                                };
+                            }
+                            categoryStats[category].items += item.quantity;
+                            categoryStats[category].revenue += item.total;
+                        }
+                    });
+                });
+
+                const sortedCategories = Object.entries(categoryStats)
+                    .sort(([,a], [,b]) => b.revenue - a.revenue);
+
+                container.innerHTML = `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Total catégories:</span>
+                        <span class="font-semibold">${Object.keys(categoryStats).length}</span>
+                    </div>
+                    ${sortedCategories.slice(0, 5).map(([category, stats]) => `
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <div>
+                                <span class="text-sm font-medium">${category}</span>
+                                <div class="text-xs text-gray-500">${stats.items} article(s)</div>
+                            </div>
+                            <span class="font-semibold">${this.formatCurrency(stats.revenue)}</span>
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            switchChartType(type) {
+                document.querySelectorAll('.chart-type-btn').forEach(btn => {
+                    btn.classList.remove('active', 'bg-green-800', 'text-white');
+                    btn.classList.add('border', 'border-gray-300', 'hover:bg-gray-50');
+                });
+                
+                const activeBtn = document.querySelector(`[data-type="${type}"]`);
+                activeBtn.classList.add('active', 'bg-green-800', 'text-white');
+                activeBtn.classList.remove('border', 'border-gray-300', 'hover:bg-gray-50');
+
+                // Update chart type
+                if (this.charts.salesTrend) {
+                    const option = this.charts.salesTrend.getOption();
+                    option.series[0].type = type;
+                    this.charts.salesTrend.setOption(option);
+                }
+            }
+
+            printReport() {
+                const printWindow = window.open('', '_blank');
+                const reportContent = this.generateReportHTML();
+                
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Rapport d'analyse - ${this.company.name}</title>
+                            <style>
+                                body { font-family: 'Inter', sans-serif; margin: 20px; }
+                                .report-section { margin-bottom: 30px; }
+                                .metric-highlight { background: #1B4332; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+                                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                                th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+                                th { background-color: #f2f2f2; }
+                            </style>
+                        </head>
+                        <body>
+                            ${reportContent}
+                        </body>
+                    </html>
+                `);
+                
+                printWindow.document.close();
+                printWindow.print();
+            }
+
+            exportReport() {
+                if (window.jspdf) {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF();
+                    
+                    // Add title
+                    pdf.setFontSize(20);
+                    pdf.text(`Rapport d'analyse - ${this.company.name}`, 20, 30);
+                    
+                    // Add period
+                    pdf.setFontSize(12);
+                    pdf.text(`Période: ${this.currentPeriod} derniers jours`, 20, 45);
+                    
+                    // Add metrics
+                    pdf.text(`Chiffre d'affaires: ${document.getElementById('reportRevenue').textContent}`, 20, 60);
+                    pdf.text(`Nombre de ventes: ${document.getElementById('reportSalesCount').textContent}`, 20, 75);
+                    pdf.text(`Panier moyen: ${document.getElementById('reportAverageCart').textContent}`, 20, 90);
+                    pdf.text(`Marge bénéficiaire: ${document.getElementById('reportProfitMargin').textContent}`, 20, 105);
+                    
+                    // Add generated date
+                    pdf.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 120);
+                    
+                    pdf.save(`rapport_analyse_${new Date().toISOString().split('T')[0]}.pdf`);
+                    
+                    window.gestionStockApp.showNotification('Rapport exporté avec succès', 'success');
+                }
+            }
+
+            exportStockReport() {
+                const stockData = {
+                    company: this.company.name,
+                    exportDate: new Date().toISOString(),
+                    totalProducts: this.products.length,
+                    totalValue: this.products.reduce((sum, product) => sum + (product.stock * product.purchasePrice), 0),
+                    products: this.products.map(product => ({
+                        name: product.name,
+                        code: product.code,
+                        category: product.category,
+                        stock: product.stock,
+                        lowStockThreshold: product.lowStockThreshold,
+                        purchasePrice: product.purchasePrice,
+                        sellingPrice: product.sellingPrice,
+                        stockValue: product.stock * product.purchasePrice
+                    }))
+                };
+
+                const dataBlob = new Blob([JSON.stringify(stockData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `rapport_stock_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                window.gestionStockApp.showNotification('Rapport stock exporté', 'success');
+            }
+
+            exportCustomersReport() {
+                const customersData = {
+                    company: this.company.name,
+                    exportDate: new Date().toISOString(),
+                    customers: this.sales.map(sale => sale.customer)
+                };
+
+                const dataBlob = new Blob([JSON.stringify(customersData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `rapport_clients_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                window.gestionStockApp.showNotification('Rapport clients exporté', 'success');
+            }
+
+            exportCategoryReport() {
+                const categoryData = {
+                    company: this.company.name,
+                    exportDate: new Date().toISOString(),
+                    categories: [...new Set(this.products.map(p => p.category))]
+                };
+
+                const dataBlob = new Blob([JSON.stringify(categoryData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `rapport_categories_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                window.gestionStockApp.showNotification('Rapport catégories exporté', 'success');
+            }
+
+            generateReportHTML() {
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - this.currentPeriod);
+                const endDate = new Date();
+
+                return `
+                    <div class="report-section">
+                        <h1>Rapport d'analyse - ${this.company.name}</h1>
+                        <p>Période: ${startDate.toLocaleDateString('fr-FR')} - ${endDate.toLocaleDateString('fr-FR')}</p>
+                        <p>Généré le: ${new Date().toLocaleDateString('fr-FR')}</p>
+                    </div>
+                    
+                    <div class="report-section">
+                        <h2>Métriques clés</h2>
+                        <div class="metric-highlight">
+                            <p>Chiffre d'affaires: ${document.getElementById('reportRevenue').textContent}</p>
+                            <p>Nombre de ventes: ${document.getElementById('reportSalesCount').textContent}</p>
+                            <p>Panier moyen: ${document.getElementById('reportAverageCart').textContent}</p>
+                            <p>Marge bénéficiaire: ${document.getElementById('reportProfitMargin').textContent}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="report-section">
+                        <h2>Analyse détaillée</h2>
+                        <p>Ce rapport présente une analyse complète de l'activité de l'entreprise sur la période sélectionnée.</p>
+                    </div>
+                `;
+            }
+
+            formatCurrency(amount) {
+                return window.gestionStockApp.formatCurrency(amount, this.company.currency);
+            }
+
+            formatDate(date) {
+                return new Date(date).toLocaleDateString('fr-FR');
+            }
+        }
+
+        // Initialize reports manager
+        let reportsManager;
+        document.addEventListener('DOMContentLoaded', () => {
+            reportsManager = new ReportsManager();
+        });
+    </script>
+</body>
+</html>

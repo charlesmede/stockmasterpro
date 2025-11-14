@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestionStock Pro - Gestion Complète des Stocks et Ventes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #FAFAFA;
+            overflow-x: hidden;
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, #1B4332 0%, #52796F 100%);
+            position: relative;
+        }
+        .floating-element {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #1B4332, #52796F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .step-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .step-active {
+            background: #1B4332;
+            color: white;
+        }
+        .step-completed {
+            background: #10B981;
+            color: white;
+        }
+        .step-inactive {
+            background: #E5E7EB;
+            color: #6B7280;
+        }
+        #p5-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        .content-overlay {
+            position: relative;
+            z-index: 1;
+        }
+        .form-section {
+            display: none;
+        }
+        .form-section.active {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .logo-preview {
+            width: 120px;
+            height: 120px;
+            border: 2px dashed #D1D5DB;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F9FAFB;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .logo-preview:hover {
+            border-color: #1B4332;
+            background: #F0FDF4;
+        }
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-800 to-green-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-boxes text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">GestionStock Pro</h1>
+                        <p class="text-xs text-gray-500">Gestion complète des stocks et ventes</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="loginBtn" class="text-gray-600 hover:text-gray-900 font-medium">Connexion</button>
+                    <button id="registerBtn" class="bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">S'inscrire</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg min-h-screen relative overflow-hidden">
+        <div id="p5-container" class="absolute inset-0"></div>
+        
+        <div class="content-overlay max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
+            <div class="text-center mb-16">
+                <h1 class="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                    Gérez vos stocks et ventes
+                    <span class="block text-amber-400">comme un professionnel</span>
+                </h1>
+                <p class="text-xl text-green-100 mb-8 max-w-3xl mx-auto leading-relaxed">
+                    Solution complète de gestion des stocks, facturation, et analyses pour les entreprises togolaises. 
+                    Conforme à la réglementation fiscale avec TVA à 29.5%.
+                </p>
+                <button id="startNowBtn" class="bg-amber-500 hover:bg-amber-400 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all transform hover:scale-105 shadow-lg">
+                    Commencer maintenant
+                    <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid md:grid-cols-3 gap-8 mb-20">
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 card-hover border border-white/20">
+                    <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">Tableau de bord analytique</h3>
+                    <p class="text-green-100">Visualisez vos ventes, chiffre d'affaires et performance en temps réel avec des graphiques interactifs.</p>
+                </div>
+                
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 card-hover border border-white/20">
+                    <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fas fa-file-invoice text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">Facturation professionnelle</h3>
+                    <p class="text-green-100">Générez des factures et reçus conformes avec TVA, téléchargeables en PDF avec votre logo.</p>
+                </div>
+                
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 card-hover border border-white/20">
+                    <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fas fa-boxes text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">Gestion des stocks</h3>
+                    <p class="text-green-100">Suivez les entrées/sorties, recevez des alertes de stock faible, gérez vos produits par catégories.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Registration Modal -->
+    <div id="registrationModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-green-800 to-green-600 p-6 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Inscription entreprise</h2>
+                        <p class="text-green-100">Configurez votre espace de gestion</p>
+                    </div>
+                    <button id="closeModal" class="text-white hover:text-gray-200 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Progress Steps -->
+                <div class="flex items-center justify-center mt-6 space-x-8">
+                    <div class="flex items-center">
+                        <div class="step-indicator step-active" id="step1Indicator">1</div>
+                        <span class="ml-2 text-white text-sm">Informations</span>
+                    </div>
+                    <div class="w-12 h-0.5 bg-white/30"></div>
+                    <div class="flex items-center">
+                        <div class="step-indicator step-inactive" id="step2Indicator">2</div>
+                        <span class="ml-2 text-white/70 text-sm">Logo & Contacts</span>
+                    </div>
+                    <div class="w-12 h-0.5 bg-white/30"></div>
+                    <div class="flex items-center">
+                        <div class="step-indicator step-inactive" id="step3Indicator">3</div>
+                        <span class="ml-2 text-white/70 text-sm">Configuration</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-8">
+                <form id="registrationForm">
+                    <!-- Step 1: Company Information -->
+                    <div class="form-section active" id="step1">
+                        <h3 class="text-xl font-semibold mb-6 gradient-text">Informations de l'entreprise</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nom de l'entreprise *</label>
+                                <input type="text" id="companyName" required 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Registre de commerce *</label>
+                                <input type="text" id="companyReg" required 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">N° Contribuable *</label>
+                                <input type="text" id="taxNumber" required 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Secteur d'activité</label>
+                                <select id="businessSector" 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                    <option value="">Sélectionner un secteur</option>
+                                    <option value="commerce">Commerce général</option>
+                                    <option value="restauration">Restauration</option>
+                                    <option value="services">Services</option>
+                                    <option value="construction">Construction</option>
+                                    <option value="autre">Autre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description de l'activité</label>
+                            <textarea id="businessDescription" rows="3" 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      placeholder="Décrivez brièvement vos activités principales..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Logo & Contacts -->
+                    <div class="form-section" id="step2">
+                        <h3 class="text-xl font-semibold mb-6 gradient-text">Logo et contacts</h3>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-4">Logo de l'entreprise</label>
+                                <div class="logo-preview" id="logoPreview">
+                                    <div class="text-center">
+                                        <i class="fas fa-upload text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-sm text-gray-500">Cliquer pour uploader</p>
+                                        <p class="text-xs text-gray-400">PNG, JPG (max 2MB)</p>
+                                    </div>
+                                </div>
+                                <input type="file" id="logoInput" accept="image/*" class="hidden">
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Téléphone *</label>
+                                    <input type="tel" id="companyPhone" required 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                                    <input type="email" id="companyEmail" required 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Adresse</label>
+                                    <textarea id="companyAddress" rows="3" 
+                                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                              placeholder="Adresse complète de l'entreprise..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Configuration -->
+                    <div class="form-section" id="step3">
+                        <h3 class="text-xl font-semibold mb-6 gradient-text">Configuration financière</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Devise principale *</label>
+                                <select id="currency" required 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                    <option value="">Sélectionner une devise</option>
+                                    <option value="FCFA">Franc CFA (FCFA)</option>
+                                    <option value="USD">Dollar Américain ($)</option>
+                                    <option value="EUR">Euro (€)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Taux de TVA (%)</label>
+                                <input type="number" id="tvaRate" value="29.5" step="0.1" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">TVA au Togo: 29.5%</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <h4 class="text-lg font-medium text-gray-900 mb-4">Paramètres de sécurité</h4>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Mot de passe *</label>
+                                    <input type="password" id="password" required 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirmer le mot de passe *</label>
+                                    <input type="password" id="confirmPassword" required 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 p-4 bg-green-50 rounded-lg">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-green-600 mt-1 mr-3"></i>
+                                <div>
+                                    <h5 class="font-medium text-green-800">Configuration recommandée</h5>
+                                    <p class="text-sm text-green-700 mt-1">
+                                        Vos données seront stockées localement dans votre navigateur. 
+                                        Assurez-vous d'utiliser un appareil sécurisé et de faire des sauvegardes régulières.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                        <button type="button" id="prevBtn" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors" style="display: none;">
+                            <i class="fas fa-arrow-left mr-2"></i>Précédent
+                        </button>
+                        <div class="flex space-x-4">
+                            <button type="button" id="nextBtn" class="px-6 py-3 bg-green-800 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                Suivant<i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                            <button type="submit" id="submitBtn" class="px-6 py-3 bg-green-800 text-white rounded-lg hover:bg-green-700 transition-colors" style="display: none;">
+                                <i class="fas fa-check mr-2"></i>Créer mon espace
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="flex items-center justify-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-green-800 to-green-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-boxes text-white text-lg"></i>
+                </div>
+                <h3 class="text-xl font-bold">GestionStock Pro</h3>
+            </div>
+            <p class="text-gray-400 mb-4">Solution de gestion des stocks et ventes pour entreprises togolaises</p>
+            <p class="text-sm text-gray-500">© 2024 GestionStock Pro. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>

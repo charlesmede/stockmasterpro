@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturation - GestionStock Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #FAFAFA;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #1B4332, #52796F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .nav-item {
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover {
+            background: #f0fdf4;
+            color: #1B4332;
+        }
+        .nav-item.active {
+            background: #1B4332;
+            color: white;
+        }
+        .invoice-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .invoice-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+        .status-paid { background: #dcfce7; color: #166534; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+        .status-draft { background: #e5e7eb; color: #374151; }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background: #1B4332;
+            color: white;
+        }
+        .cart-item {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 0;
+        }
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        .invoice-preview {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 2rem;
+            font-family: 'Inter', sans-serif;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .invoice-preview { 
+                border: none; 
+                padding: 0; 
+                box-shadow: none; 
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-800 to-green-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-boxes text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">GestionStock Pro</h1>
+                        <p class="text-xs text-gray-500" id="companyName">Facturation</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bars text-gray-600"></i>
+                    </button>
+                    <div class="hidden md:flex items-center space-x-3">
+                        <span class="text-sm text-gray-600" id="currentDate"></span>
+                        <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-gray-600 text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white w-64 border-r border-gray-200 hidden md:block">
+            <div class="p-4">
+                <nav class="space-y-2">
+                    <a href="dashboard.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-tachometer-alt mr-3"></i>
+                        Tableau de bord
+                    </a>
+                    <a href="products.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-boxes mr-3"></i>
+                        Produits
+                    </a>
+                    <a href="stock.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-warehouse mr-3"></i>
+                        Gestion du stock
+                    </a>
+                    <a href="invoicing.html" class="nav-item active flex items-center px-4 py-3 rounded-lg text-sm font-medium">
+                        <i class="fas fa-file-invoice mr-3"></i>
+                        Facturation
+                    </a>
+                    <a href="reports.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        Rapports
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-6 lg:p-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold gradient-text mb-2">Facturation</h2>
+                        <p class="text-gray-600">Gérez vos ventes et documents</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        <button id="exportInvoicesBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Exporter
+                        </button>
+                        <button id="newSaleBtn" class="bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Nouvelle vente
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="invoice-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Ventes aujourd'hui</p>
+                            <p class="text-2xl font-bold text-gray-900" id="todaySales">0</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="salesGrowth">+12.5%</span> vs hier
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-shopping-cart text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="invoice-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Chiffre d'affaires</p>
+                            <p class="text-2xl font-bold text-gray-900" id="todayRevenue">0 FCFA</p>
+                            <p class="text-xs text-blue-600 mt-1">
+                                <i class="fas fa-calendar-day mr-1"></i>
+                                Aujourd'hui
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="invoice-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Factures impayées</p>
+                            <p class="text-2xl font-bold text-gray-900" id="pendingInvoices">0</p>
+                            <p class="text-xs text-orange-600 mt-1">
+                                <i class="fas fa-clock mr-1"></i>
+                                En attente de paiement
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-orange-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="invoice-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Montant dû</p>
+                            <p class="text-2xl font-bold text-gray-900" id="amountDue">0 FCFA</p>
+                            <p class="text-xs text-red-600 mt-1">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                Factures impayées
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-8 px-6">
+                        <button class="tab-button active py-4 px-2 border-b-2 border-transparent font-medium text-sm" data-tab="current">
+                            Ventes en cours
+                        </button>
+                        <button class="tab-button py-4 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="history">
+                            Historique
+                        </button>
+                        <button class="tab-button py-4 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="pending">
+                            En attente
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="p-6">
+                    <!-- Current Sales Tab -->
+                    <div id="currentTab" class="tab-content">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 lg:mb-0">Ventes en cours</h3>
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                                <input type="text" id="invoiceSearch" placeholder="Rechercher une vente..." 
+                                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <select id="invoiceFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                    <option value="all">Tous les documents</option>
+                                    <option value="invoice">Factures</option>
+                                    <option value="receipt">Reçus</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4" id="currentSalesList">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+
+                    <!-- History Tab -->
+                    <div id="historyTab" class="tab-content hidden">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 lg:mb-0">Historique des ventes</h3>
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                                <input type="date" id="historyDateFilter" 
+                                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <select id="historyStatusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                    <option value="all">Tous les statuts</option>
+                                    <option value="paid">Payé</option>
+                                    <option value="pending">En attente</option>
+                                    <option value="cancelled">Annulé</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Dynamic content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Pending Tab -->
+                    <div id="pendingTab" class="tab-content hidden">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Factures en attente de paiement</h3>
+                        <div class="space-y-4" id="pendingList">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Sale Modal -->
+    <div id="saleModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-green-800 to-green-600 p-6 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <h2 id="modalTitle" class="text-2xl font-bold text-white">Nouvelle vente</h2>
+                    <button id="closeModal" class="text-white hover:text-gray-200 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <!-- Sale Form -->
+                    <div class="lg:col-span-2">
+                        <form id="saleForm">
+                            <!-- Customer Info -->
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Informations client</h3>
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Nom du client *</label>
+                                        <input type="text" id="customerName" required 
+                                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                               placeholder="Nom complet du client">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                                        <input type="tel" id="customerPhone" 
+                                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                               placeholder="Numéro de téléphone">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input type="email" id="customerEmail" 
+                                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                               placeholder="adresse@email.com">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Document Type -->
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Type de document</h3>
+                                <div class="flex space-x-4">
+                                    <label class="flex items-center">
+                                        <input type="radio" name="documentType" value="receipt" checked 
+                                               class="text-green-600 focus:ring-green-500">
+                                        <span class="ml-2 text-sm font-medium text-gray-700">Reçu</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="radio" name="documentType" value="invoice" 
+                                               class="text-green-600 focus:ring-green-500">
+                                        <span class="ml-2 text-sm font-medium text-gray-700">Facture</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Product Selection -->
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Produits</h3>
+                                <div class="flex space-x-4 mb-4">
+                                    <select id="productSelect" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                        <option value="">Sélectionner un produit</option>
+                                    </select>
+                                    <input type="number" id="productQuantity" min="1" value="1" 
+                                           class="w-24 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                    <button type="button" id="addProductBtn" class="bg-green-800 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Cart -->
+                                <div id="cartItems" class="space-y-2">
+                                    <!-- Dynamic cart items -->
+                                </div>
+                            </div>
+
+                            <!-- Payment Info -->
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Paiement</h3>
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Mode de paiement</label>
+                                        <select id="paymentMethod" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                            <option value="cash">Espèces</option>
+                                            <option value="card">Carte bancaire</option>
+                                            <option value="transfer">Virement bancaire</option>
+                                            <option value="check">Chèque</option>
+                                            <option value="credit">À crédit</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Statut du paiement</label>
+                                        <select id="paymentStatus" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                            <option value="paid">Payé</option>
+                                            <option value="pending">En attente</option>
+                                            <option value="partial">Paiement partiel</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Invoice Preview -->
+                    <div class="lg:col-span-1">
+                        <div class="sticky top-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Aperçu</h3>
+                            <div id="invoicePreview" class="invoice-preview">
+                                <!-- Dynamic invoice preview -->
+                            </div>
+                            
+                            <!-- Totals -->
+                            <div class="mt-4 bg-gray-50 rounded-lg p-4">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span>Sous-total:</span>
+                                        <span id="subtotal">0 FCFA</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span>TVA (29.5%):</span>
+                                        <span id="tvaAmount">0 FCFA</span>
+                                    </div>
+                                    <div class="flex justify-between text-lg font-bold border-t pt-2">
+                                        <span>Total TTC:</span>
+                                        <span id="totalAmount">0 FCFA</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="mt-6 space-y-3">
+                                <button id="saveInvoiceBtn" class="w-full bg-green-800 text-white py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-save mr-2"></i>Enregistrer
+                                </button>
+                                <button id="printInvoiceBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-print mr-2"></i>Imprimer
+                                </button>
+                                <button id="downloadInvoiceBtn" class="w-full bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors">
+                                    <i class="fas fa-download mr-2"></i>Télécharger PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // Invoicing Management
+        class InvoicingManager {
+            constructor() {
+                this.products = [];
+                this.sales = [];
+                this.cart = [];
+                this.company = null;
+                this.currentTab = 'current';
+                this.init();
+            }
+
+            init() {
+                this.checkAuthentication();
+                this.loadData();
+                this.setupEventListeners();
+                this.updateCurrentDate();
+                this.renderCurrentTab();
+                this.updateMetrics();
+            }
+
+            checkAuthentication() {
+                const companyData = localStorage.getItem('gestionstock_company');
+                if (!companyData) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                this.company = JSON.parse(companyData);
+                document.getElementById('companyName').textContent = this.company.name;
+            }
+
+            updateCurrentDate() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                document.getElementById('currentDate').textContent = now.toLocaleDateString('fr-FR', options);
+            }
+
+            loadData() {
+                const companyId = this.company.id;
+                this.products = JSON.parse(localStorage.getItem(`gestionstock_products_${companyId}`) || '[]');
+                this.sales = JSON.parse(localStorage.getItem(`gestionstock_sales_${companyId}`) || '[]');
+            }
+
+            setupEventListeners() {
+                // Modal controls
+                document.getElementById('newSaleBtn').addEventListener('click', () => this.openSaleModal());
+                document.getElementById('closeModal').addEventListener('click', () => this.closeSaleModal());
+                
+                // Product selection
+                document.getElementById('addProductBtn').addEventListener('click', () => this.addProductToCart());
+                document.getElementById('productSelect').addEventListener('change', () => this.updateProductInfo());
+                
+                // Form submission
+                document.getElementById('saveInvoiceBtn').addEventListener('click', () => this.saveInvoice());
+                document.getElementById('printInvoiceBtn').addEventListener('click', () => this.printInvoice());
+                document.getElementById('downloadInvoiceBtn').addEventListener('click', () => this.downloadInvoice());
+                
+                // Tab switching
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+                });
+
+                // Form changes
+                document.getElementById('customerName').addEventListener('input', () => this.updatePreview());
+                document.querySelectorAll('input[name="documentType"]').forEach(radio => {
+                    radio.addEventListener('change', () => this.updatePreview());
+                });
+
+                // Filters
+                document.getElementById('invoiceSearch').addEventListener('input', () => this.filterInvoices());
+                document.getElementById('invoiceFilter').addEventListener('change', () => this.filterInvoices());
+                document.getElementById('historyDateFilter').addEventListener('change', () => this.filterHistory());
+                document.getElementById('historyStatusFilter').addEventListener('change', () => this.filterHistory());
+
+                // Export
+                document.getElementById('exportInvoicesBtn').addEventListener('click', () => this.exportInvoices());
+
+                // Mobile menu
+                document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                    const sidebar = document.getElementById('sidebar');
+                    sidebar.classList.toggle('hidden');
+                });
+            }
+
+            openSaleModal() {
+                const modal = document.getElementById('saleModal');
+                this.populateProductSelect();
+                this.resetSaleForm();
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                
+                anime({
+                    targets: '#saleModal .bg-white',
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    duration: 400,
+                    easing: 'easeOutBack'
+                });
+            }
+
+            closeSaleModal() {
+                anime({
+                    targets: '#saleModal .bg-white',
+                    scale: [1, 0.8],
+                    opacity: [1, 0],
+                    duration: 300,
+                    easing: 'easeInBack',
+                    complete: () => {
+                        document.getElementById('saleModal').classList.add('hidden');
+                        document.body.style.overflow = 'auto';
+                        this.resetSaleForm();
+                    }
+                });
+            }
+
+            populateProductSelect() {
+                const select = document.getElementById('productSelect');
+                select.innerHTML = '<option value="">Sélectionner un produit</option>';
+                
+                this.products.forEach(product => {
+                    if (product.stock > 0) {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = `${product.name} (${product.code}) - ${this.formatCurrency(product.sellingPrice)}`;
+                        select.appendChild(option);
+                    }
+                });
+            }
+
+            resetSaleForm() {
+                document.getElementById('saleForm').reset();
+                this.cart = [];
+                this.updateCartDisplay();
+                this.updatePreview();
+            }
+
+            updateProductInfo() {
+                const productId = document.getElementById('productSelect').value;
+                if (productId) {
+                    const product = this.products.find(p => p.id === productId);
+                    if (product) {
+                        document.getElementById('productQuantity').value = 1;
+                    }
+                }
+            }
+
+            addProductToCart() {
+                const productId = document.getElementById('productSelect').value;
+                const quantity = parseInt(document.getElementById('productQuantity').value) || 1;
+                
+                if (!productId) {
+                    window.gestionStockApp.showNotification('Veuillez sélectionner un produit', 'error');
+                    return;
+                }
+
+                const product = this.products.find(p => p.id === productId);
+                if (!product) {
+                    window.gestionStockApp.showNotification('Produit introuvable', 'error');
+                    return;
+                }
+
+                if (quantity > product.stock) {
+                    window.gestionStockApp.showNotification(`Stock insuffisant. Stock disponible: ${product.stock}`, 'error');
+                    return;
+                }
+
+                // Check if product already in cart
+                const existingItem = this.cart.find(item => item.productId === productId);
+                if (existingItem) {
+                    if (existingItem.quantity + quantity > product.stock) {
+                        window.gestionStockApp.showNotification(`Stock insuffisant. Stock disponible: ${product.stock}`, 'error');
+                        return;
+                    }
+                    existingItem.quantity += quantity;
+                } else {
+                    this.cart.push({
+                        productId: productId,
+                        product: product,
+                        quantity: quantity,
+                        unitPrice: product.sellingPrice
+                    });
+                }
+
+                this.updateCartDisplay();
+                this.updatePreview();
+                
+                // Reset product selection
+                document.getElementById('productSelect').value = '';
+                document.getElementById('productQuantity').value = '1';
+            }
+
+            removeFromCart(index) {
+                this.cart.splice(index, 1);
+                this.updateCartDisplay();
+                this.updatePreview();
+            }
+
+            updateCartQuantity(index, newQuantity) {
+                const item = this.cart[index];
+                if (newQuantity <= 0) {
+                    this.removeFromCart(index);
+                    return;
+                }
+
+                if (newQuantity > item.product.stock) {
+                    window.gestionStockApp.showNotification(`Stock insuffisant. Stock disponible: ${item.product.stock}`, 'error');
+                    return;
+                }
+
+                item.quantity = newQuantity;
+                this.updateCartDisplay();
+                this.updatePreview();
+            }
+
+            updateCartDisplay() {
+                const container = document.getElementById('cartItems');
+                
+                if (this.cart.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">Aucun produit dans le panier</p>';
+                    return;
+                }
+
+                container.innerHTML = this.cart.map((item, index) => `
+                    <div class="cart-item flex items-center justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">${item.product.name}</h4>
+                            <p class="text-sm text-gray-500">${item.product.code} - ${this.formatCurrency(item.unitPrice)}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <input type="number" min="1" max="${item.product.stock}" value="${item.quantity}" 
+                                   class="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                   onchange="invoicingManager.updateCartQuantity(${index}, parseInt(this.value))">
+                            <span class="font-semibold">${this.formatCurrency(item.quantity * item.unitPrice)}</span>
+                            <button onclick="invoicingManager.removeFromCart(${index})" 
+                                    class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updatePreview() {
+                const customerName = document.getElementById('customerName').value;
+                const documentType = document.querySelector('input[name="documentType"]:checked').value;
+                
+                // Calculate totals
+                const subtotal = this.cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+                const tvaRate = this.company.tvaRate || 29.5;
+                const tvaAmount = subtotal * (tvaRate / 100);
+                const total = subtotal + tvaAmount;
+
+                // Update totals display
+                document.getElementById('subtotal').textContent = this.formatCurrency(subtotal);
+                document.getElementById('tvaAmount').textContent = this.formatCurrency(tvaAmount);
+                document.getElementById('totalAmount').textContent = this.formatCurrency(total);
+
+                // Generate invoice preview
+                const preview = document.getElementById('invoicePreview');
+                const documentTitle = documentType === 'invoice' ? 'FACTURE' : 'REÇU';
+                const documentNumber = this.generateDocumentNumber(documentType);
+
+                preview.innerHTML = `
+                    <div class="text-center mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900">${this.company.name}</h1>
+                        <p class="text-sm text-gray-600">${this.company.address || ''}</p>
+                        <p class="text-sm text-gray-600">Tél: ${this.company.phone || ''} | Email: ${this.company.email || ''}</p>
+                    </div>
+
+                    <div class="border-b border-gray-200 pb-4 mb-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">${documentTitle}</h2>
+                                <p class="text-sm text-gray-600">N°: ${documentNumber}</p>
+                                <p class="text-sm text-gray-600">Date: ${new Date().toLocaleDateString('fr-FR')}</p>
+                            </div>
+                            ${this.company.logo ? `
+                                <img src="${this.company.logo}" alt="Logo" class="h-16 w-auto">
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-gray-900 mb-2">Client:</h3>
+                        <p class="text-sm text-gray-700">${customerName || 'Non spécifié'}</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-2">Produit</th>
+                                    <th class="text-center py-2">Qté</th>
+                                    <th class="text-right py-2">Prix</th>
+                                    <th class="text-right py-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${this.cart.map(item => `
+                                    <tr class="border-b border-gray-100">
+                                        <td class="py-2">${item.product.name}</td>
+                                        <td class="text-center py-2">${item.quantity}</td>
+                                        <td class="text-right py-2">${this.formatCurrency(item.unitPrice)}</td>
+                                        <td class="text-right py-2">${this.formatCurrency(item.quantity * item.unitPrice)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-right">
+                        <div class="space-y-1 text-sm">
+                            <div class="flex justify-between">
+                                <span>Sous-total:</span>
+                                <span>${this.formatCurrency(subtotal)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>TVA (${tvaRate}%):</span>
+                                <span>${this.formatCurrency(tvaAmount)}</span>
+                            </div>
+                            <div class="flex justify-between font-bold text-lg border-t pt-2">
+                                <span>Total TTC:</span>
+                                <span>${this.formatCurrency(total)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 text-xs text-gray-500 text-center">
+                        <p>TVA au taux de ${tvaRate}% conformément à la réglementation togolaise</p>
+                        <p>Merci pour votre confiance!</p>
+                    </div>
+                `;
+            }
+
+            generateDocumentNumber(type) {
+                const prefix = type === 'invoice' ? 'FAC' : 'REC';
+                const count = this.sales.filter(sale => sale.type === type).length + 1;
+                const year = new Date().getFullYear();
+                return `${prefix}${year}${String(count).padStart(4, '0')}`;
+            }
+
+            saveInvoice() {
+                const customerName = document.getElementById('customerName').value;
+                const customerPhone = document.getElementById('customerPhone').value;
+                const customerEmail = document.getElementById('customerEmail').value;
+                const documentType = document.querySelector('input[name="documentType"]:checked').value;
+                const paymentMethod = document.getElementById('paymentMethod').value;
+                const paymentStatus = document.getElementById('paymentStatus').value;
+
+                // Validation
+                if (!customerName) {
+                    window.gestionStockApp.showNotification('Veuillez entrer le nom du client', 'error');
+                    return;
+                }
+
+                if (this.cart.length === 0) {
+                    window.gestionStockApp.showNotification('Veuillez ajouter au moins un produit', 'error');
+                    return;
+                }
+
+                // Calculate totals
+                const subtotal = this.cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+                const tvaRate = this.company.tvaRate || 29.5;
+                const tvaAmount = subtotal * (tvaRate / 100);
+                const total = subtotal + tvaAmount;
+
+                // Create sale record
+                const sale = {
+                    id: this.generateId(),
+                    documentNumber: this.generateDocumentNumber(documentType),
+                    type: documentType,
+                    customer: {
+                        name: customerName,
+                        phone: customerPhone,
+                        email: customerEmail
+                    },
+                    items: this.cart.map(item => ({
+                        productId: item.productId,
+                        productName: item.product.name,
+                        productCode: item.product.code,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        total: item.quantity * item.unitPrice
+                    })),
+                    subtotal: subtotal,
+                    tvaRate: tvaRate,
+                    tvaAmount: tvaAmount,
+                    totalAmount: total,
+                    paymentMethod: paymentMethod,
+                    paymentStatus: paymentStatus,
+                    date: new Date().toISOString(),
+                    status: paymentStatus === 'paid' ? 'paid' : 'pending'
+                };
+
+                // Update product stock
+                this.cart.forEach(item => {
+                    const product = this.products.find(p => p.id === item.productId);
+                    if (product) {
+                        product.stock -= item.quantity;
+                    }
+                });
+
+                // Save sale and update products
+                this.sales.push(sale);
+                this.saveSales();
+                this.saveProducts();
+
+                // Update UI
+                this.updateMetrics();
+                this.renderCurrentTab();
+                this.closeSaleModal();
+                
+                window.gestionStockApp.showNotification('Vente enregistrée avec succès', 'success');
+            }
+
+            printInvoice() {
+                const printWindow = window.open('', '_blank');
+                const preview = document.getElementById('invoicePreview').innerHTML;
+                
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Impression</title>
+                            <style>
+                                body { font-family: 'Inter', sans-serif; margin: 20px; }
+                                .invoice-preview { max-width: 800px; margin: 0 auto; }
+                            </style>
+                        </head>
+                        <body>
+                            ${preview}
+                        </body>
+                    </html>
+                `);
+                
+                printWindow.document.close();
+                printWindow.print();
+            }
+
+            downloadInvoice() {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                // This is a simplified PDF generation
+                // In a real application, you would use html2canvas to capture the preview
+                pdf.setFontSize(16);
+                pdf.text(this.company.name, 20, 30);
+                pdf.setFontSize(12);
+                pdf.text(`Document: ${this.generateDocumentNumber('receipt')}`, 20, 50);
+                pdf.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 20, 65);
+                
+                const subtotal = this.cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+                const tvaRate = this.company.tvaRate || 29.5;
+                const tvaAmount = subtotal * (tvaRate / 100);
+                const total = subtotal + tvaAmount;
+                
+                pdf.text(`Sous-total: ${this.formatCurrency(subtotal)}`, 20, 90);
+                pdf.text(`TVA (${tvaRate}%): ${this.formatCurrency(tvaAmount)}`, 20, 105);
+                pdf.text(`Total: ${this.formatCurrency(total)}`, 20, 120);
+                
+                pdf.save(`document_${new Date().toISOString().split('T')[0]}.pdf`);
+            }
+
+            switchTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.classList.add('text-gray-500', 'hover:text-gray-700');
+                });
+                
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                document.querySelector(`[data-tab="${tabName}"]`).classList.remove('text-gray-500', 'hover:text-gray-700');
+
+                // Update tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+                
+                this.currentTab = tabName;
+                this.renderCurrentTab();
+            }
+
+            renderCurrentTab() {
+                switch (this.currentTab) {
+                    case 'current':
+                        this.renderCurrentSales();
+                        break;
+                    case 'history':
+                        this.renderHistoryTable();
+                        break;
+                    case 'pending':
+                        this.renderPendingInvoices();
+                        break;
+                }
+            }
+
+            renderCurrentSales() {
+                const container = document.getElementById('currentSalesList');
+                const recentSales = this.sales.slice(-10).reverse(); // Last 10 sales
+                
+                if (recentSales.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-receipt text-4xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune vente en cours</h3>
+                            <p class="text-gray-500">Commencez par créer votre première vente</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = recentSales.map(sale => `
+                    <div class="invoice-card p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="status-badge ${sale.status === 'paid' ? 'status-paid' : 'status-pending'} mr-3">
+                                        ${sale.status === 'paid' ? 'Payé' : 'En attente'}
+                                    </span>
+                                    <h4 class="font-semibold text-gray-900">${sale.type === 'invoice' ? 'Facture' : 'Reçu'} ${sale.documentNumber}</h4>
+                                </div>
+                                <div class="text-sm text-gray-600 mb-1">
+                                    Client: ${sale.customer.name} | ${sale.items.length} article(s)
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    ${this.formatDate(sale.date)} | Paiement: ${this.getPaymentMethodLabel(sale.paymentMethod)}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-gray-900">${this.formatCurrency(sale.totalAmount)}</div>
+                                <div class="flex space-x-2 mt-2">
+                                    <button onclick="invoicingManager.printSale('${sale.id}')" 
+                                            class="text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-print text-sm"></i>
+                                    </button>
+                                    <button onclick="invoicingManager.downloadSale('${sale.id}')" 
+                                            class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-download text-sm"></i>
+                                    </button>
+                                    ${sale.status === 'pending' ? `
+                                        <button onclick="invoicingManager.markAsPaid('${sale.id}')" 
+                                                class="text-orange-600 hover:text-orange-800">
+                                            <i class="fas fa-check text-sm"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderHistoryTable() {
+                const tbody = document.getElementById('historyTableBody');
+                
+                tbody.innerHTML = this.sales.map(sale => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${sale.type === 'invoice' ? 'Facture' : 'Reçu'} ${sale.documentNumber}</div>
+                            <div class="text-sm text-gray-500">${sale.items.length} article(s)</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${sale.customer.name}</div>
+                            <div class="text-sm text-gray-500">${sale.customer.phone || ''}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${this.formatDate(sale.date)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${this.formatCurrency(sale.totalAmount)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="status-badge ${sale.status === 'paid' ? 'status-paid' : sale.status === 'pending' ? 'status-pending' : 'status-cancelled'}">
+                                ${sale.status === 'paid' ? 'Payé' : sale.status === 'pending' ? 'En attente' : 'Annulé'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="invoicingManager.printSale('${sale.id}')" 
+                                    class="text-blue-600 hover:text-blue-900 mr-3">
+                                <i class="fas fa-print"></i>
+                            </button>
+                            <button onclick="invoicingManager.downloadSale('${sale.id}')" 
+                                    class="text-green-600 hover:text-green-900 mr-3">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            ${sale.status === 'pending' ? `
+                                <button onclick="invoicingManager.markAsPaid('${sale.id}')" 
+                                        class="text-orange-600 hover:text-orange-900">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            renderPendingInvoices() {
+                const container = document.getElementById('pendingList');
+                const pendingSales = this.sales.filter(sale => sale.status === 'pending');
+                
+                if (pendingSales.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-check-circle text-4xl text-green-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune facture en attente</h3>
+                            <p class="text-gray-500">Toutes vos factures sont réglées</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = pendingSales.map(sale => `
+                    <div class="invoice-card p-4 border-l-4 border-orange-500">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="status-badge status-pending mr-3">En attente</span>
+                                    <h4 class="font-semibold text-gray-900">${sale.type === 'invoice' ? 'Facture' : 'Reçu'} ${sale.documentNumber}</h4>
+                                </div>
+                                <div class="text-sm text-gray-600 mb-1">
+                                    Client: ${sale.customer.name} | ${sale.items.length} article(s)
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    ${this.formatDate(sale.date)} | Échéance: ${this.getDueDate(sale.date)}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-gray-900">${this.formatCurrency(sale.totalAmount)}</div>
+                                <button onclick="invoicingManager.markAsPaid('${sale.id}')" 
+                                        class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-check mr-1"></i>Marquer comme payé
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateMetrics() {
+                const today = new Date().toDateString();
+                const todaySales = this.sales.filter(sale => 
+                    new Date(sale.date).toDateString() === today
+                );
+                
+                // Today's sales count
+                document.getElementById('todaySales').textContent = todaySales.length;
+                
+                // Today's revenue
+                const todayRevenue = todaySales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+                document.getElementById('todayRevenue').textContent = this.formatCurrency(todayRevenue);
+                
+                // Pending invoices
+                const pendingSales = this.sales.filter(sale => sale.status === 'pending');
+                document.getElementById('pendingInvoices').textContent = pendingSales.length;
+                
+                // Amount due
+                const amountDue = pendingSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+                document.getElementById('amountDue').textContent = this.formatCurrency(amountDue);
+            }
+
+            printSale(saleId) {
+                const sale = this.sales.find(s => s.id === saleId);
+                if (sale) {
+                    // Generate a simple print view
+                    const printWindow = window.open('', '_blank');
+                    printWindow.document.write(`
+                        <html>
+                            <head>
+                                <title>${sale.type === 'invoice' ? 'Facture' : 'Reçu'} ${sale.documentNumber}</title>
+                                <style>
+                                    body { font-family: 'Inter', sans-serif; margin: 20px; }
+                                    .invoice-header { text-align: center; margin-bottom: 30px; }
+                                    .invoice-body { margin-bottom: 30px; }
+                                    .invoice-footer { text-align: center; margin-top: 30px; }
+                                    table { width: 100%; border-collapse: collapse; }
+                                    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+                                    th { background-color: #f2f2f2; }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="invoice-header">
+                                    <h1>${this.company.name}</h1>
+                                    <p>${sale.type === 'invoice' ? 'FACTURE' : 'REÇU'} N° ${sale.documentNumber}</p>
+                                    <p>Date: ${this.formatDate(sale.date)}</p>
+                                </div>
+                                <div class="invoice-body">
+                                    <p><strong>Client:</strong> ${sale.customer.name}</p>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Produit</th>
+                                                <th>Qté</th>
+                                                <th>Prix</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${sale.items.map(item => `
+                                                <tr>
+                                                    <td>${item.productName}</td>
+                                                    <td>${item.quantity}</td>
+                                                    <td>${this.formatCurrency(item.unitPrice)}</td>
+                                                    <td>${this.formatCurrency(item.total)}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="invoice-footer">
+                                    <p><strong>Total: ${this.formatCurrency(sale.totalAmount)}</strong></p>
+                                    <p>Merci pour votre confiance!</p>
+                                </div>
+                            </body>
+                        </html>
+                    `);
+                    printWindow.document.close();
+                    printWindow.print();
+                }
+            }
+
+            downloadSale(saleId) {
+                const sale = this.sales.find(s => s.id === saleId);
+                if (sale && window.jspdf) {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF();
+                    
+                    pdf.setFontSize(16);
+                    pdf.text(this.company.name, 20, 30);
+                    pdf.setFontSize(12);
+                    pdf.text(`${sale.type === 'invoice' ? 'FACTURE' : 'REÇU'} N° ${sale.documentNumber}`, 20, 45);
+                    pdf.text(`Date: ${this.formatDate(sale.date)}`, 20, 60);
+                    pdf.text(`Client: ${sale.customer.name}`, 20, 75);
+                    
+                    let yPosition = 90;
+                    sale.items.forEach(item => {
+                        pdf.text(`${item.productName} (${item.quantity}) - ${this.formatCurrency(item.total)}`, 20, yPosition);
+                        yPosition += 15;
+                    });
+                    
+                    pdf.text(`Total: ${this.formatCurrency(sale.totalAmount)}`, 20, yPosition + 15);
+                    
+                    pdf.save(`${sale.type}_${sale.documentNumber}.pdf`);
+                }
+            }
+
+            markAsPaid(saleId) {
+                const sale = this.sales.find(s => s.id === saleId);
+                if (sale) {
+                    sale.status = 'paid';
+                    sale.paymentStatus = 'paid';
+                    this.saveSales();
+                    this.updateMetrics();
+                    this.renderCurrentTab();
+                    window.gestionStockApp.showNotification('Facture marquée comme payée', 'success');
+                }
+            }
+
+            filterInvoices() {
+                const searchQuery = document.getElementById('invoiceSearch').value.toLowerCase();
+                const filterValue = document.getElementById('invoiceFilter').value;
+                
+                let filteredSales = this.sales;
+                
+                if (searchQuery) {
+                    filteredSales = filteredSales.filter(sale => 
+                        sale.customer.name.toLowerCase().includes(searchQuery) ||
+                        sale.documentNumber.toLowerCase().includes(searchQuery)
+                    );
+                }
+                
+                if (filterValue !== 'all') {
+                    filteredSales = filteredSales.filter(sale => sale.type === filterValue);
+                }
+                
+                this.renderFilteredCurrentSales(filteredSales.slice(-10).reverse());
+            }
+
+            renderFilteredCurrentSales(filteredSales) {
+                const container = document.getElementById('currentSalesList');
+                
+                if (filteredSales.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-search text-4xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune vente trouvée</h3>
+                            <p class="text-gray-500">Aucune vente ne correspond à vos filtres</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = filteredSales.map(sale => `
+                    <div class="invoice-card p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="status-badge ${sale.status === 'paid' ? 'status-paid' : 'status-pending'} mr-3">
+                                        ${sale.status === 'paid' ? 'Payé' : 'En attente'}
+                                    </span>
+                                    <h4 class="font-semibold text-gray-900">${sale.type === 'invoice' ? 'Facture' : 'Reçu'} ${sale.documentNumber}</h4>
+                                </div>
+                                <div class="text-sm text-gray-600 mb-1">
+                                    Client: ${sale.customer.name} | ${sale.items.length} article(s)
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    ${this.formatDate(sale.date)} | Paiement: ${this.getPaymentMethodLabel(sale.paymentMethod)}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-gray-900">${this.formatCurrency(sale.totalAmount)}</div>
+                                <div class="flex space-x-2 mt-2">
+                                    <button onclick="invoicingManager.printSale('${sale.id}')" 
+                                            class="text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-print text-sm"></i>
+                                    </button>
+                                    <button onclick="invoicingManager.downloadSale('${sale.id}')" 
+                                            class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-download text-sm"></i>
+                                    </button>
+                                    ${sale.status === 'pending' ? `
+                                        <button onclick="invoicingManager.markAsPaid('${sale.id}')" 
+                                                class="text-orange-600 hover:text-orange-800">
+                                            <i class="fas fa-check text-sm"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            filterHistory() {
+                const dateFilter = document.getElementById('historyDateFilter').value;
+                const statusFilter = document.getElementById('historyStatusFilter').value;
+                
+                let filteredSales = [...this.sales];
+                
+                if (dateFilter) {
+                    filteredSales = filteredSales.filter(sale => 
+                        sale.date.split('T')[0] === dateFilter
+                    );
+                }
+                
+                if (statusFilter !== 'all') {
+                    filteredSales = filteredSales.filter(sale => sale.status === statusFilter);
+                }
+                
+                this.renderFilteredHistoryTable(filteredSales);
+            }
+
+            renderFilteredHistoryTable(filteredSales) {
+                const tbody = document.getElementById('historyTableBody');
+                
+                tbody.innerHTML = filteredSales.map(sale => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${sale.type === 'invoice' ? 'Facture' : 'Reçu'} ${sale.documentNumber}</div>
+                            <div class="text-sm text-gray-500">${sale.items.length} article(s)</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${sale.customer.name}</div>
+                            <div class="text-sm text-gray-500">${sale.customer.phone || ''}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${this.formatDate(sale.date)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${this.formatCurrency(sale.totalAmount)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="status-badge ${sale.status === 'paid' ? 'status-paid' : sale.status === 'pending' ? 'status-pending' : 'status-cancelled'}">
+                                ${sale.status === 'paid' ? 'Payé' : sale.status === 'pending' ? 'En attente' : 'Annulé'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="invoicingManager.printSale('${sale.id}')" 
+                                    class="text-blue-600 hover:text-blue-900 mr-3">
+                                <i class="fas fa-print"></i>
+                            </button>
+                            <button onclick="invoicingManager.downloadSale('${sale.id}')" 
+                                    class="text-green-600 hover:text-green-900 mr-3">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            ${sale.status === 'pending' ? `
+                                <button onclick="invoicingManager.markAsPaid('${sale.id}')" 
+                                        class="text-orange-600 hover:text-orange-900">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            exportInvoices() {
+                const exportData = {
+                    company: this.company.name,
+                    exportDate: new Date().toISOString(),
+                    sales: this.sales,
+                    totalCount: this.sales.length,
+                    totalAmount: this.sales.reduce((sum, sale) => sum + sale.totalAmount, 0)
+                };
+
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `ventes_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                window.gestionStockApp.showNotification('Ventes exportées avec succès', 'success');
+            }
+
+            saveSales() {
+                localStorage.setItem(`gestionstock_sales_${this.company.id}`, JSON.stringify(this.sales));
+            }
+
+            saveProducts() {
+                localStorage.setItem(`gestionstock_products_${this.company.id}`, JSON.stringify(this.products));
+            }
+
+            generateId() {
+                return 'sale_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            formatCurrency(amount) {
+                return window.gestionStockApp.formatCurrency(amount, this.company.currency);
+            }
+
+            formatDate(date) {
+                return new Date(date).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            getDueDate(date) {
+                const dueDate = new Date(date);
+                dueDate.setDate(dueDate.getDate() + 30); // 30 days payment terms
+                return dueDate.toLocaleDateString('fr-FR');
+            }
+
+            getPaymentMethodLabel(method) {
+                const labels = {
+                    'cash': 'Espèces',
+                    'card': 'Carte bancaire',
+                    'transfer': 'Virement',
+                    'check': 'Chèque',
+                    'credit': 'À crédit'
+                };
+                return labels[method] || method;
+            }
+        }
+
+        // Initialize invoicing manager
+        let invoicingManager;
+        document.addEventListener('DOMContentLoaded', () => {
+            invoicingManager = new InvoicingManager();
+        });
+    </script>
+</body>
+</html>

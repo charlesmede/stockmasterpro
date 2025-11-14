@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de bord - GestionStock Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #FAFAFA;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #1B4332, #52796F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .nav-item {
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover {
+            background: #f0fdf4;
+            color: #1B4332;
+        }
+        .nav-item.active {
+            background: #1B4332;
+            color: white;
+        }
+        .quick-action-btn {
+            background: linear-gradient(135deg, #1B4332, #52796F);
+            transition: all 0.3s ease;
+        }
+        .quick-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px rgba(27, 67, 50, 0.3);
+        }
+        .stock-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .stock-high { background: #10B981; }
+        .stock-medium { background: #F59E0B; }
+        .stock-low { background: #EF4444; }
+        .recent-activity-item {
+            border-left: 3px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        .recent-activity-item:hover {
+            border-left-color: #1B4332;
+            background: #f9fafb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-800 to-green-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-boxes text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">GestionStock Pro</h1>
+                        <p class="text-xs text-gray-500" id="companyName">Tableau de bord</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bars text-gray-600"></i>
+                    </button>
+                    <div class="hidden md:flex items-center space-x-3">
+                        <span class="text-sm text-gray-600" id="currentDate"></span>
+                        <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-gray-600 text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white w-64 border-r border-gray-200 hidden md:block">
+            <div class="p-4">
+                <nav class="space-y-2">
+                    <a href="dashboard.html" class="nav-item active flex items-center px-4 py-3 rounded-lg text-sm font-medium">
+                        <i class="fas fa-tachometer-alt mr-3"></i>
+                        Tableau de bord
+                    </a>
+                    <a href="products.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-boxes mr-3"></i>
+                        Produits
+                    </a>
+                    <a href="stock.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-warehouse mr-3"></i>
+                        Gestion du stock
+                    </a>
+                    <a href="invoicing.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-file-invoice mr-3"></i>
+                        Facturation
+                    </a>
+                    <a href="reports.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        Rapports
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-6 lg:p-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold gradient-text mb-2">Tableau de bord</h2>
+                        <p class="text-gray-600">Vue d'ensemble de votre activité</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        <button id="refreshBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>Actualiser
+                        </button>
+                        <button id="exportBtn" class="quick-action-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-2"></i>Exporter
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card p-6 rounded-xl card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Chiffre d'affaires</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalRevenue">0 FCFA</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="revenueGrowth">+0%</span> ce mois
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metric-card p-6 rounded-xl card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Ventes totales</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalSales">0</p>
+                            <p class="text-xs text-blue-600 mt-1">
+                                <i class="fas fa-shopping-cart mr-1"></i>
+                                <span id="salesCount">0</span> ventes aujourd'hui
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metric-card p-6 rounded-xl card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Produits en stock</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalProducts">0</p>
+                            <p class="text-xs text-orange-600 mt-1">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                <span id="lowStockCount">0</span> en stock faible
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-boxes text-orange-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metric-card p-6 rounded-xl card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Bénéfice net</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalProfit">0 FCFA</p>
+                            <p class="text-xs text-purple-600 mt-1">
+                                <i class="fas fa-percentage mr-1"></i>
+                                <span id="profitMargin">0%</span> marge bénéficiaire
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-coins text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Revenue Chart -->
+                <div class="chart-container p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Chiffre d'affaires</h3>
+                        <select id="revenuePeriod" class="text-sm border border-gray-300 rounded-lg px-3 py-1">
+                            <option value="7">7 derniers jours</option>
+                            <option value="30" selected>30 derniers jours</option>
+                            <option value="90">3 derniers mois</option>
+                        </select>
+                    </div>
+                    <div id="revenueChart" style="height: 300px;"></div>
+                </div>
+
+                <!-- Sales Chart -->
+                <div class="chart-container p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Ventes par catégorie</h3>
+                        <select id="salesPeriod" class="text-sm border border-gray-300 rounded-lg px-3 py-1">
+                            <option value="7">7 derniers jours</option>
+                            <option value="30" selected>30 derniers jours</option>
+                            <option value="90">3 derniers mois</option>
+                        </select>
+                    </div>
+                    <div id="salesChart" style="height: 300px;"></div>
+                </div>
+            </div>
+
+            <!-- Stock Status and Recent Activity -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Stock Status -->
+                <div class="chart-container p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">État des stocks</h3>
+                    <div id="stockChart" style="height: 250px;"></div>
+                </div>
+
+                <!-- Top Products -->
+                <div class="chart-container p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Produits les plus vendus</h3>
+                    <div class="space-y-3" id="topProductsList">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="chart-container p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
+                    <div class="space-y-3" id="recentActivity">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="mt-8 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="window.location.href='products.html'" class="quick-action-btn text-white p-4 rounded-lg text-center">
+                        <i class="fas fa-plus text-2xl mb-2 block"></i>
+                        <span class="text-sm">Nouveau produit</span>
+                    </button>
+                    <button onclick="window.location.href='stock.html'" class="quick-action-btn text-white p-4 rounded-lg text-center">
+                        <i class="fas fa-arrow-down text-2xl mb-2 block"></i>
+                        <span class="text-sm">Entrée stock</span>
+                    </button>
+                    <button onclick="window.location.href='invoicing.html'" class="quick-action-btn text-white p-4 rounded-lg text-center">
+                        <i class="fas fa-cash-register text-2xl mb-2 block"></i>
+                        <span class="text-sm">Nouvelle vente</span>
+                    </button>
+                    <button onclick="window.location.href='reports.html'" class="quick-action-btn text-white p-4 rounded-lg text-center">
+                        <i class="fas fa-file-pdf text-2xl mb-2 block"></i>
+                        <span class="text-sm">Exporter rapport</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // Dashboard specific functionality
+        class DashboardManager {
+            constructor() {
+                this.charts = {};
+                this.init();
+            }
+
+            init() {
+                this.checkAuthentication();
+                this.loadDashboardData();
+                this.initializeCharts();
+                this.setupEventListeners();
+                this.updateCurrentDate();
+            }
+
+            checkAuthentication() {
+                const companyData = localStorage.getItem('gestionstock_company');
+                if (!companyData) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                this.company = JSON.parse(companyData);
+                document.getElementById('companyName').textContent = this.company.name;
+            }
+
+            updateCurrentDate() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                document.getElementById('currentDate').textContent = now.toLocaleDateString('fr-FR', options);
+            }
+
+            loadDashboardData() {
+                const companyId = this.company.id;
+                
+                // Load data from localStorage
+                this.products = JSON.parse(localStorage.getItem(`gestionstock_products_${companyId}`) || '[]');
+                this.stockMovements = JSON.parse(localStorage.getItem(`gestionstock_stockMovements_${companyId}`) || '[]');
+                this.sales = JSON.parse(localStorage.getItem(`gestionstock_sales_${companyId}`) || '[]');
+                
+                this.updateMetrics();
+                this.updateTopProducts();
+                this.updateRecentActivity();
+            }
+
+            updateMetrics() {
+                // Calculate total revenue
+                const totalRevenue = this.sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+                document.getElementById('totalRevenue').textContent = this.formatCurrency(totalRevenue);
+
+                // Calculate total sales count
+                document.getElementById('totalSales').textContent = this.sales.length;
+
+                // Calculate products count
+                document.getElementById('totalProducts').textContent = this.products.length;
+
+                // Calculate low stock products
+                const lowStockProducts = this.products.filter(p => p.stock <= (p.lowStockThreshold || 10)).length;
+                document.getElementById('lowStockCount').textContent = lowStockProducts;
+
+                // Calculate profit (simplified)
+                const totalProfit = this.sales.reduce((sum, sale) => {
+                    return sum + (sale.totalAmount - sale.totalCost);
+                }, 0);
+                document.getElementById('totalProfit').textContent = this.formatCurrency(totalProfit);
+
+                // Calculate profit margin
+                const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue * 100).toFixed(1) : 0;
+                document.getElementById('profitMargin').textContent = profitMargin + '%';
+
+                // Calculate today's sales
+                const today = new Date().toDateString();
+                const todaySales = this.sales.filter(sale => 
+                    new Date(sale.date).toDateString() === today
+                ).length;
+                document.getElementById('salesCount').textContent = todaySales;
+
+                // Calculate revenue growth (simplified)
+                document.getElementById('revenueGrowth').textContent = '+12.5%'; // Mock data
+            }
+
+            initializeCharts() {
+                this.initializeRevenueChart();
+                this.initializeSalesChart();
+                this.initializeStockChart();
+            }
+
+            initializeRevenueChart() {
+                const chartDom = document.getElementById('revenueChart');
+                this.charts.revenue = echarts.init(chartDom);
+
+                // Generate mock data for the last 30 days
+                const dates = [];
+                const revenues = [];
+                const today = new Date();
+                
+                for (let i = 29; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    dates.push(date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }));
+                    revenues.push(Math.floor(Math.random() * 50000) + 20000); // Mock revenue data
+                }
+
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: '{b}: {c} FCFA'
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: dates,
+                        axisLabel: {
+                            fontSize: 10
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            formatter: '{value} FCFA',
+                            fontSize: 10
+                        }
+                    },
+                    series: [{
+                        data: revenues,
+                        type: 'line',
+                        smooth: true,
+                        lineStyle: {
+                            color: '#1B4332',
+                            width: 3
+                        },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0,
+                                y: 0,
+                                x2: 0,
+                                y2: 1,
+                                colorStops: [{
+                                    offset: 0, color: 'rgba(27, 67, 50, 0.3)'
+                                }, {
+                                    offset: 1, color: 'rgba(27, 67, 50, 0.05)'
+                                }]
+                            }
+                        },
+                        itemStyle: {
+                            color: '#1B4332'
+                        }
+                    }],
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    }
+                };
+
+                this.charts.revenue.setOption(option);
+            }
+
+            initializeSalesChart() {
+                const chartDom = document.getElementById('salesChart');
+                this.charts.sales = echarts.init(chartDom);
+
+                // Mock data for sales by category
+                const categoryData = [
+                    { name: 'Alimentation', value: 35 },
+                    { name: 'Électronique', value: 25 },
+                    { name: 'Vêtements', value: 20 },
+                    { name: 'Cosmétiques', value: 12 },
+                    { name: 'Autres', value: 8 }
+                ];
+
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{a} <br/>{b}: {c} ({d}%)'
+                    },
+                    series: [{
+                        name: 'Ventes',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '16',
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: categoryData,
+                        color: ['#1B4332', '#52796F', '#F77F00', '#10B981', '#8B5CF6']
+                    }]
+                };
+
+                this.charts.sales.setOption(option);
+            }
+
+            initializeStockChart() {
+                const chartDom = document.getElementById('stockChart');
+                this.charts.stock = echarts.init(chartDom);
+
+                // Calculate stock status
+                const totalProducts = this.products.length;
+                const highStock = this.products.filter(p => p.stock > 20).length;
+                const mediumStock = this.products.filter(p => p.stock > 10 && p.stock <= 20).length;
+                const lowStock = this.products.filter(p => p.stock <= 10).length;
+
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{b}: {c} produits ({d}%)'
+                    },
+                    series: [{
+                        type: 'pie',
+                        radius: '70%',
+                        data: [
+                            { value: highStock, name: 'Stock élevé', itemStyle: { color: '#10B981' } },
+                            { value: mediumStock, name: 'Stock moyen', itemStyle: { color: '#F59E0B' } },
+                            { value: lowStock, name: 'Stock faible', itemStyle: { color: '#EF4444' } }
+                        ],
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        },
+                        label: {
+                            fontSize: 10
+                        }
+                    }]
+                };
+
+                this.charts.stock.setOption(option);
+            }
+
+            updateTopProducts() {
+                const topProductsList = document.getElementById('topProductsList');
+                
+                // Mock top products data
+                const topProducts = [
+                    { name: 'Riz Premium', sales: 156, revenue: 234000 },
+                    { name: 'Huile Végétale', sales: 142, revenue: 198800 },
+                    { name: 'Savon de Marseille', sales: 128, revenue: 166400 },
+                    { name: 'Lait Concentré', sales: 115, revenue: 149500 },
+                    { name: 'Biscuits Assortis', sales: 98, revenue: 127400 }
+                ];
+
+                topProductsList.innerHTML = topProducts.map((product, index) => `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <span class="w-6 h-6 bg-green-800 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                                ${index + 1}
+                            </span>
+                            <div>
+                                <p class="font-medium text-gray-900 text-sm">${product.name}</p>
+                                <p class="text-xs text-gray-500">${product.sales} ventes</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-gray-900 text-sm">${this.formatCurrency(product.revenue)}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateRecentActivity() {
+                const recentActivity = document.getElementById('recentActivity');
+                
+                // Mock recent activities
+                const activities = [
+                    { type: 'sale', description: 'Vente de Riz Premium', amount: 15000, time: 'Il y a 5 min' },
+                    { type: 'stock', description: 'Entrée stock: Huile Végétale', amount: null, time: 'Il y a 12 min' },
+                    { type: 'sale', description: 'Vente de Savon de Marseille', amount: 12000, time: 'Il y a 18 min' },
+                    { type: 'stock', description: 'Sortie stock: Lait Concentré', amount: null, time: 'Il y a 25 min' },
+                    { type: 'sale', description: 'Vente de Biscuits Assortis', amount: 8500, time: 'Il y a 32 min' }
+                ];
+
+                recentActivity.innerHTML = activities.map(activity => `
+                    <div class="recent-activity-item p-3 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 ${activity.type === 'sale' ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas ${activity.type === 'sale' ? 'fa-shopping-cart' : 'fa-boxes'} ${activity.type === 'sale' ? 'text-green-600' : 'text-blue-600'} text-xs"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">${activity.description}</p>
+                                    <p class="text-xs text-gray-500">${activity.time}</p>
+                                </div>
+                            </div>
+                            ${activity.amount ? `<span class="text-sm font-semibold text-green-600">${this.formatCurrency(activity.amount)}</span>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            setupEventListeners() {
+                // Refresh button
+                document.getElementById('refreshBtn').addEventListener('click', () => {
+                    this.loadDashboardData();
+                    this.initializeCharts();
+                    window.gestionStockApp.showNotification('Données actualisées', 'success');
+                });
+
+                // Export button
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportDashboardData();
+                });
+
+                // Period selectors
+                document.getElementById('revenuePeriod').addEventListener('change', (e) => {
+                    this.updateRevenueChart(e.target.value);
+                });
+
+                document.getElementById('salesPeriod').addEventListener('change', (e) => {
+                    this.updateSalesChart(e.target.value);
+                });
+
+                // Mobile menu toggle
+                document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                    const sidebar = document.getElementById('sidebar');
+                    sidebar.classList.toggle('hidden');
+                });
+
+                // Resize charts on window resize
+                window.addEventListener('resize', () => {
+                    Object.values(this.charts).forEach(chart => {
+                        chart.resize();
+                    });
+                });
+            }
+
+            updateRevenueChart(period) {
+                // Update chart based on selected period
+                // This would typically fetch new data based on the period
+                console.log('Updating revenue chart for period:', period);
+            }
+
+            updateSalesChart(period) {
+                // Update chart based on selected period
+                console.log('Updating sales chart for period:', period);
+            }
+
+            exportDashboardData() {
+                const dashboardData = {
+                    metrics: {
+                        totalRevenue: document.getElementById('totalRevenue').textContent,
+                        totalSales: document.getElementById('totalSales').textContent,
+                        totalProducts: document.getElementById('totalProducts').textContent,
+                        totalProfit: document.getElementById('totalProfit').textContent
+                    },
+                    generatedAt: new Date().toISOString(),
+                    company: this.company.name
+                };
+
+                // Create and download JSON file
+                const dataStr = JSON.stringify(dashboardData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `dashboard_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                window.gestionStockApp.showNotification('Données exportées avec succès', 'success');
+            }
+
+            formatCurrency(amount) {
+                return window.gestionStockApp.formatCurrency(amount, this.company.currency);
+            }
+        }
+
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new DashboardManager();
+        });
+    </script>
+</body>
+</html>

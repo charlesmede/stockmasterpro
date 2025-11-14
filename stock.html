@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion du stock - GestionStock Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #FAFAFA;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #1B4332, #52796F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .nav-item {
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover {
+            background: #f0fdf4;
+            color: #1B4332;
+        }
+        .nav-item.active {
+            background: #1B4332;
+            color: white;
+        }
+        .stock-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .stock-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        .movement-entry {
+            background: #f0fdf4;
+            border-left: 4px solid #10B981;
+        }
+        .movement-exit {
+            background: #fef2f2;
+            border-left: 4px solid #EF4444;
+        }
+        .movement-loss {
+            background: #fffbeb;
+            border-left: 4px solid #F59E0B;
+        }
+        .stock-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .stock-high { background: #10B981; }
+        .stock-medium { background: #F59E0B; }
+        .stock-low { background: #EF4444; }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background: #1B4332;
+            color: white;
+        }
+        .movement-type-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+        .type-entry { background: #dcfce7; color: #166534; }
+        .type-exit { background: #fee2e2; color: #991b1b; }
+        .type-loss { background: #fef3c7; color: #92400e; }
+        .type-return { background: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-800 to-green-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-boxes text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">GestionStock Pro</h1>
+                        <p class="text-xs text-gray-500" id="companyName">Gestion du stock</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bars text-gray-600"></i>
+                    </button>
+                    <div class="hidden md:flex items-center space-x-3">
+                        <span class="text-sm text-gray-600" id="currentDate"></span>
+                        <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-gray-600 text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white w-64 border-r border-gray-200 hidden md:block">
+            <div class="p-4">
+                <nav class="space-y-2">
+                    <a href="dashboard.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-tachometer-alt mr-3"></i>
+                        Tableau de bord
+                    </a>
+                    <a href="products.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-boxes mr-3"></i>
+                        Produits
+                    </a>
+                    <a href="stock.html" class="nav-item active flex items-center px-4 py-3 rounded-lg text-sm font-medium">
+                        <i class="fas fa-warehouse mr-3"></i>
+                        Gestion du stock
+                    </a>
+                    <a href="invoicing.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-file-invoice mr-3"></i>
+                        Facturation
+                    </a>
+                    <a href="reports.html" class="nav-item flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        Rapports
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-6 lg:p-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold gradient-text mb-2">Gestion du stock</h2>
+                        <p class="text-gray-600">Suivez les mouvements de votre stock</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        <button id="exportMovementsBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Exporter
+                        </button>
+                        <button id="addMovementBtn" class="bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Nouveau mouvement
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="stock-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Valeur totale du stock</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalStockValue">0 FCFA</p>
+                            <p class="text-xs text-blue-600 mt-1">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Basé sur les prix d'achat
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calculator text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stock-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Produits en stock</p>
+                            <p class="text-2xl font-bold text-gray-900" id="productsInStock">0</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="stockGrowth">+5.2%</span> ce mois
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-boxes text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stock-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Alertes stock faible</p>
+                            <p class="text-2xl font-bold text-gray-900" id="lowStockAlerts">0</p>
+                            <p class="text-xs text-orange-600 mt-1">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                Nécessite réapprovisionnement
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-orange-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stock-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Mouvements aujourd'hui</p>
+                            <p class="text-2xl font-bold text-gray-900" id="todayMovements">0</p>
+                            <p class="text-xs text-purple-600 mt-1">
+                                <i class="fas fa-sync-alt mr-1"></i>
+                                <span id="movementsChange">+3</span> par rapport à hier
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exchange-alt text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-8 px-6">
+                        <button class="tab-button active py-4 px-2 border-b-2 border-transparent font-medium text-sm" data-tab="current">
+                            Stock actuel
+                        </button>
+                        <button class="tab-button py-4 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="movements">
+                            Mouvements
+                        </button>
+                        <button class="tab-button py-4 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="alerts">
+                            Alertes
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="p-6">
+                    <!-- Current Stock Tab -->
+                    <div id="currentTab" class="tab-content">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 lg:mb-0">État du stock</h3>
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                                <input type="text" id="stockSearch" placeholder="Rechercher un produit..." 
+                                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <select id="stockFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                    <option value="all">Tous les produits</option>
+                                    <option value="low">Stock faible</option>
+                                    <option value="medium">Stock moyen</option>
+                                    <option value="high">Stock élevé</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catégorie</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock actuel</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valeur stock</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockTableBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Dynamic content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Movements Tab -->
+                    <div id="movementsTab" class="tab-content hidden">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 lg:mb-0">Historique des mouvements</h3>
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                                <input type="date" id="movementDateFilter" 
+                                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <select id="movementTypeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                    <option value="all">Tous les types</option>
+                                    <option value="entry">Entrées</option>
+                                    <option value="exit">Sorties</option>
+                                    <option value="loss">Pertes</option>
+                                    <option value="return">Retours</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4" id="movementsList">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+
+                    <!-- Alerts Tab -->
+                    <div id="alertsTab" class="tab-content hidden">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Alertes de stock faible</h3>
+                        <div class="space-y-4" id="alertsList">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Stock Movement Modal -->
+    <div id="movementModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-green-800 to-green-600 p-6 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <h2 id="modalTitle" class="text-2xl font-bold text-white">Nouveau mouvement de stock</h2>
+                    <button id="closeModal" class="text-white hover:text-gray-200 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <form id="movementForm">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Movement Type -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Type de mouvement *</label>
+                            <select id="movementType" required 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">Sélectionner un type</option>
+                                <option value="entry">Entrée de stock</option>
+                                <option value="exit">Sortie de stock</option>
+                                <option value="loss">Perte/Détérioration</option>
+                                <option value="return">Retour client</option>
+                            </select>
+                        </div>
+
+                        <!-- Product Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Produit *</label>
+                            <select id="movementProduct" required 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">Sélectionner un produit</option>
+                            </select>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Quantité *</label>
+                            <input type="number" id="movementQuantity" required min="1" step="1"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                   placeholder="0">
+                        </div>
+
+                        <!-- Unit Price -->
+                        <div id="unitPriceDiv">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Prix unitaire (FCFA)</label>
+                            <input type="number" id="movementUnitPrice" min="0" step="0.01"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                   placeholder="0.00">
+                        </div>
+
+                        <!-- Supplier (for entries) -->
+                        <div id="supplierDiv" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fournisseur</label>
+                            <input type="text" id="movementSupplier" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                   placeholder="Nom du fournisseur">
+                        </div>
+
+                        <!-- Reference (for exits) -->
+                        <div id="referenceDiv" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Référence</label>
+                            <input type="text" id="movementReference" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                   placeholder="Numéro de facture ou bon de sortie">
+                        </div>
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Motif/Raison</label>
+                        <textarea id="movementReason" rows="3" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  placeholder="Description du mouvement..."></textarea>
+                    </div>
+
+                    <!-- Current Stock Display -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Stock actuel:</span>
+                            <span id="currentStockDisplay" class="text-lg font-semibold text-gray-900">0</span>
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-sm text-gray-600">Nouveau stock:</span>
+                            <span id="newStockDisplay" class="text-lg font-semibold text-blue-600">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
+                        <button type="button" id="cancelMovementBtn" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Annuler
+                        </button>
+                        <button type="submit" id="saveMovementBtn" class="bg-green-800 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // Stock Management
+        class StockManager {
+            constructor() {
+                this.products = [];
+                this.stockMovements = [];
+                this.currentTab = 'current';
+                this.company = null;
+                this.init();
+            }
+
+            init() {
+                this.checkAuthentication();
+                this.loadData();
+                this.setupEventListeners();
+                this.updateCurrentDate();
+                this.renderCurrentTab();
+                this.updateMetrics();
+            }
+
+            checkAuthentication() {
+                const companyData = localStorage.getItem('gestionstock_company');
+                if (!companyData) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                this.company = JSON.parse(companyData);
+                document.getElementById('companyName').textContent = this.company.name;
+            }
+
+            updateCurrentDate() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                document.getElementById('currentDate').textContent = now.toLocaleDateString('fr-FR', options);
+            }
+
+            loadData() {
+                const companyId = this.company.id;
+                this.products = JSON.parse(localStorage.getItem(`gestionstock_products_${companyId}`) || '[]');
+                this.stockMovements = JSON.parse(localStorage.getItem(`gestionstock_stockMovements_${companyId}`) || '[]');
+            }
+
+            setupEventListeners() {
+                // Modal controls
+                document.getElementById('addMovementBtn').addEventListener('click', () => this.openMovementModal());
+                document.getElementById('closeModal').addEventListener('click', () => this.closeMovementModal());
+                document.getElementById('cancelMovementBtn').addEventListener('click', () => this.closeMovementModal());
+                
+                // Form submission
+                document.getElementById('movementForm').addEventListener('submit', (e) => this.handleMovementSubmit(e));
+                
+                // Tab switching
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+                });
+
+                // Movement type change
+                document.getElementById('movementType').addEventListener('change', () => this.updateFormFields());
+                document.getElementById('movementProduct').addEventListener('change', () => this.updateStockDisplay());
+                document.getElementById('movementQuantity').addEventListener('input', () => this.updateStockDisplay());
+
+                // Filters
+                document.getElementById('stockSearch').addEventListener('input', () => this.filterStockTable());
+                document.getElementById('stockFilter').addEventListener('change', () => this.filterStockTable());
+                document.getElementById('movementDateFilter').addEventListener('change', () => this.filterMovements());
+                document.getElementById('movementTypeFilter').addEventListener('change', () => this.filterMovements());
+
+                // Export
+                document.getElementById('exportMovementsBtn').addEventListener('click', () => this.exportMovements());
+
+                // Mobile menu
+                document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                    const sidebar = document.getElementById('sidebar');
+                    sidebar.classList.toggle('hidden');
+                });
+            }
+
+            openMovementModal() {
+                const modal = document.getElementById('movementModal');
+                this.populateProductSelect();
+                this.resetMovementForm();
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                
+                anime({
+                    targets: '#movementModal .bg-white',
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    duration: 400,
+                    easing: 'easeOutBack'
+                });
+            }
+
+            closeMovementModal() {
+                anime({
+                    targets: '#movementModal .bg-white',
+                    scale: [1, 0.8],
+                    opacity: [1, 0],
+                    duration: 300,
+                    easing: 'easeInBack',
+                    complete: () => {
+                        document.getElementById('movementModal').classList.add('hidden');
+                        document.body.style.overflow = 'auto';
+                        this.resetMovementForm();
+                    }
+                });
+            }
+
+            populateProductSelect() {
+                const select = document.getElementById('movementProduct');
+                select.innerHTML = '<option value="">Sélectionner un produit</option>';
+                
+                this.products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.name} (${product.code})`;
+                    select.appendChild(option);
+                });
+            }
+
+            resetMovementForm() {
+                document.getElementById('movementForm').reset();
+                document.getElementById('currentStockDisplay').textContent = '0';
+                document.getElementById('newStockDisplay').textContent = '0';
+                this.updateFormFields();
+            }
+
+            updateFormFields() {
+                const movementType = document.getElementById('movementType').value;
+                const supplierDiv = document.getElementById('supplierDiv');
+                const referenceDiv = document.getElementById('referenceDiv');
+                const unitPriceDiv = document.getElementById('unitPriceDiv');
+
+                // Reset all fields
+                supplierDiv.classList.add('hidden');
+                referenceDiv.classList.add('hidden');
+
+                // Show/hide fields based on movement type
+                switch (movementType) {
+                    case 'entry':
+                        supplierDiv.classList.remove('hidden');
+                        unitPriceDiv.classList.remove('hidden');
+                        break;
+                    case 'exit':
+                        referenceDiv.classList.remove('hidden');
+                        break;
+                    case 'return':
+                        referenceDiv.classList.remove('hidden');
+                        break;
+                    case 'loss':
+                        // No additional fields for losses
+                        break;
+                }
+            }
+
+            updateStockDisplay() {
+                const productId = document.getElementById('movementProduct').value;
+                const quantity = parseInt(document.getElementById('movementQuantity').value) || 0;
+                const movementType = document.getElementById('movementType').value;
+
+                if (productId) {
+                    const product = this.products.find(p => p.id === productId);
+                    if (product) {
+                        const currentStock = product.stock;
+                        let newStock = currentStock;
+
+                        switch (movementType) {
+                            case 'entry':
+                            case 'return':
+                                newStock = currentStock + quantity;
+                                break;
+                            case 'exit':
+                            case 'loss':
+                                newStock = currentStock - quantity;
+                                break;
+                        }
+
+                        document.getElementById('currentStockDisplay').textContent = currentStock;
+                        document.getElementById('newStockDisplay').textContent = newStock;
+
+                        // Color code the new stock
+                        const newStockElement = document.getElementById('newStockDisplay');
+                        if (newStock <= product.lowStockThreshold) {
+                            newStockElement.className = 'text-lg font-semibold text-red-600';
+                        } else if (newStock <= product.lowStockThreshold * 2) {
+                            newStockElement.className = 'text-lg font-semibold text-orange-600';
+                        } else {
+                            newStockElement.className = 'text-lg font-semibold text-green-600';
+                        }
+                    }
+                }
+            }
+
+            switchTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.classList.add('text-gray-500', 'hover:text-gray-700');
+                });
+                
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                document.querySelector(`[data-tab="${tabName}"]`).classList.remove('text-gray-500', 'hover:text-gray-700');
+
+                // Update tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+                
+                this.currentTab = tabName;
+                this.renderCurrentTab();
+            }
+
+            renderCurrentTab() {
+                switch (this.currentTab) {
+                    case 'current':
+                        this.renderStockTable();
+                        break;
+                    case 'movements':
+                        this.renderMovementsList();
+                        break;
+                    case 'alerts':
+                        this.renderAlertsList();
+                        break;
+                }
+            }
+
+            renderStockTable() {
+                const tbody = document.getElementById('stockTableBody');
+                
+                tbody.innerHTML = this.products.map(product => {
+                    const stockValue = product.stock * product.purchasePrice;
+                    const stockStatus = this.getStockStatus(product.stock, product.lowStockThreshold);
+                    
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">${product.name}</div>
+                                        <div class="text-sm text-gray-500">${product.code}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    ${product.category}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <span class="stock-indicator stock-${stockStatus}"></span>
+                                    <span class="text-sm font-semibold ${stockStatus === 'low' ? 'text-red-600' : stockStatus === 'medium' ? 'text-orange-600' : 'text-green-600'}">
+                                        ${product.stock}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${this.formatCurrency(stockValue)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    stockStatus === 'low' ? 'bg-red-100 text-red-800' :
+                                    stockStatus === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-green-100 text-green-800'
+                                }">
+                                    ${stockStatus === 'low' ? 'Stock faible' : stockStatus === 'medium' ? 'Stock moyen' : 'Stock élevé'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="stockManager.addStockForProduct('${product.id}')" 
+                                        class="text-green-600 hover:text-green-900 mr-3">
+                                    <i class="fas fa-plus text-sm"></i>
+                                </button>
+                                <button onclick="stockManager.removeStockForProduct('${product.id}')" 
+                                        class="text-red-600 hover:text-red-900">
+                                    <i class="fas fa-minus text-sm"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            renderMovementsList() {
+                const container = document.getElementById('movementsList');
+                
+                if (this.stockMovements.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun mouvement enregistré</h3>
+                            <p class="text-gray-500">Les mouvements de stock apparaîtront ici</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort movements by date (newest first)
+                const sortedMovements = [...this.stockMovements].sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                container.innerHTML = sortedMovements.map(movement => {
+                    const product = this.products.find(p => p.id === movement.productId);
+                    const movementClass = `movement-${movement.type}`;
+                    const typeBadgeClass = `type-${movement.type}`;
+                    
+                    return `
+                        <div class="movement-item ${movementClass} p-4 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <span class="movement-type-badge ${typeBadgeClass} mr-3">
+                                            ${this.getMovementTypeLabel(movement.type)}
+                                        </span>
+                                        <h4 class="font-semibold text-gray-900">${product ? product.name : 'Produit inconnu'}</h4>
+                                    </div>
+                                    <div class="text-sm text-gray-600 mb-1">
+                                        <span class="font-medium">Quantité:</span> ${movement.quantity}
+                                        ${movement.unitPrice ? ` | <span class="font-medium">Prix unitaire:</span> ${this.formatCurrency(movement.unitPrice)}` : ''}
+                                        ${movement.supplier ? ` | <span class="font-medium">Fournisseur:</span> ${movement.supplier}` : ''}
+                                        ${movement.reference ? ` | <span class="font-medium">Référence:</span> ${movement.reference}` : ''}
+                                    </div>
+                                    ${movement.reason ? `
+                                        <div class="text-sm text-gray-600">
+                                            <span class="font-medium">Motif:</span> ${movement.reason}
+                                        </div>
+                                    ` : ''}
+                                    <div class="text-xs text-gray-500 mt-2">
+                                        ${this.formatDate(movement.date)}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-semibold ${movement.type === 'entry' || movement.type === 'return' ? 'text-green-600' : 'text-red-600'}">
+                                        ${movement.type === 'entry' || movement.type === 'return' ? '+' : '-'}${movement.quantity}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Stock: ${movement.newStock}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            renderAlertsList() {
+                const container = document.getElementById('alertsList');
+                const lowStockProducts = this.products.filter(product => product.stock <= product.lowStockThreshold);
+                
+                if (lowStockProducts.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-check-circle text-4xl text-green-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune alerte</h3>
+                            <p class="text-gray-500">Tous vos produits ont un niveau de stock suffisant</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = lowStockProducts.map(product => `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                                    <h4 class="font-semibold text-red-900">${product.name}</h4>
+                                </div>
+                                <div class="text-sm text-red-700 mb-2">
+                                    Stock actuel: <span class="font-semibold">${product.stock}</span> | 
+                                    Seuil d'alerte: <span class="font-semibold">${product.lowStockThreshold}</span>
+                                </div>
+                                <div class="text-xs text-red-600">
+                                    Catégorie: ${product.category} | Code: ${product.code}
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="stockManager.addStockForProduct('${product.id}')" 
+                                        class="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-plus mr-1"></i>Réapprovisionner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            addStockForProduct(productId) {
+                const product = this.products.find(p => p.id === productId);
+                if (product) {
+                    this.openMovementModal('entry', product);
+                }
+            }
+
+            removeStockForProduct(productId) {
+                const product = this.products.find(p => p.id === productId);
+                if (product) {
+                    this.openMovementModal('exit', product);
+                }
+            }
+
+            openMovementModal(type = '', product = null) {
+                this.populateProductSelect();
+                this.resetMovementForm();
+                
+                if (type) {
+                    document.getElementById('movementType').value = type;
+                    this.updateFormFields();
+                }
+                
+                if (product) {
+                    document.getElementById('movementProduct').value = product.id;
+                    this.updateStockDisplay();
+                }
+                
+                document.getElementById('movementModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                
+                anime({
+                    targets: '#movementModal .bg-white',
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    duration: 400,
+                    easing: 'easeOutBack'
+                });
+            }
+
+            handleMovementSubmit(event) {
+                event.preventDefault();
+                
+                const formData = new FormData(event.target);
+                const movementData = {
+                    id: this.generateId(),
+                    productId: document.getElementById('movementProduct').value,
+                    type: document.getElementById('movementType').value,
+                    quantity: parseInt(document.getElementById('movementQuantity').value),
+                    unitPrice: parseFloat(document.getElementById('movementUnitPrice').value) || null,
+                    supplier: document.getElementById('movementSupplier').value || null,
+                    reference: document.getElementById('movementReference').value || null,
+                    reason: document.getElementById('movementReason').value || null,
+                    date: new Date().toISOString(),
+                    user: 'Admin' // In a real app, this would be the logged-in user
+                };
+
+                // Validation
+                if (!movementData.productId || !movementData.type || !movementData.quantity) {
+                    window.gestionStockApp.showNotification('Veuillez remplir tous les champs obligatoires', 'error');
+                    return;
+                }
+
+                if (movementData.quantity <= 0) {
+                    window.gestionStockApp.showNotification('La quantité doit être supérieure à 0', 'error');
+                    return;
+                }
+
+                // Update product stock
+                const product = this.products.find(p => p.id === movementData.productId);
+                if (!product) {
+                    window.gestionStockApp.showNotification('Produit introuvable', 'error');
+                    return;
+                }
+
+                let newStock = product.stock;
+                switch (movementData.type) {
+                    case 'entry':
+                    case 'return':
+                        newStock = product.stock + movementData.quantity;
+                        break;
+                    case 'exit':
+                    case 'loss':
+                        if (product.stock < movementData.quantity) {
+                            window.gestionStockApp.showNotification('Stock insuffisant pour cette opération', 'error');
+                            return;
+                        }
+                        newStock = product.stock - movementData.quantity;
+                        break;
+                }
+
+                product.stock = newStock;
+                movementData.newStock = newStock;
+                movementData.oldStock = product.stock;
+
+                // Save movement and update product
+                this.stockMovements.push(movementData);
+                this.saveStockMovements();
+                this.saveProducts();
+
+                // Update UI
+                this.updateMetrics();
+                this.renderCurrentTab();
+                this.closeMovementModal();
+                
+                window.gestionStockApp.showNotification('Mouvement enregistré avec succès', 'success');
+            }
+
+            updateMetrics() {
+                // Calculate total stock value
+                const totalValue = this.products.reduce((sum, product) => sum + (product.stock * product.purchasePrice), 0);
+                document.getElementById('totalStockValue').textContent = this.formatCurrency(totalValue);
+
+                // Count products in stock (stock > 0)
+                const productsInStock = this.products.filter(product => product.stock > 0).length;
+                document.getElementById('productsInStock').textContent = productsInStock;
+
+                // Count low stock alerts
+                const lowStockAlerts = this.products.filter(product => product.stock <= product.lowStockThreshold).length;
+                document.getElementById('lowStockAlerts').textContent = lowStockAlerts;
+
+                // Count today's movements
+                const today = new Date().toDateString();
+                const todayMovements = this.stockMovements.filter(movement => 
+                    new Date(movement.date).toDateString() === today
+                ).length;
+                document.getElementById('todayMovements').textContent = todayMovements;
+            }
+
+            getStockStatus(stock, threshold) {
+                if (stock <= threshold) return 'low';
+                if (stock <= threshold * 2) return 'medium';
+                return 'high';
+            }
+
+            getMovementTypeLabel(type) {
+                const labels = {
+                    'entry': 'Entrée',
+                    'exit': 'Sortie',
+                    'loss': 'Perte',
+                    'return': 'Retour'
+                };
+                return labels[type] || type;
+            }
+
+            filterStockTable() {
+                const searchQuery = document.getElementById('stockSearch').value.toLowerCase();
+                const filterValue = document.getElementById('stockFilter').value;
+                
+                let filteredProducts = this.products;
+                
+                // Apply search filter
+                if (searchQuery) {
+                    filteredProducts = filteredProducts.filter(product => 
+                        product.name.toLowerCase().includes(searchQuery) ||
+                        product.code.toLowerCase().includes(searchQuery) ||
+                        product.category.toLowerCase().includes(searchQuery)
+                    );
+                }
+                
+                // Apply stock level filter
+                if (filterValue !== 'all') {
+                    filteredProducts = filteredProducts.filter(product => {
+                        const status = this.getStockStatus(product.stock, product.lowStockThreshold);
+                        return status === filterValue;
+                    });
+                }
+                
+                // Re-render table with filtered data
+                this.renderFilteredStockTable(filteredProducts);
+            }
+
+            renderFilteredStockTable(filteredProducts) {
+                const tbody = document.getElementById('stockTableBody');
+                
+                tbody.innerHTML = filteredProducts.map(product => {
+                    const stockValue = product.stock * product.purchasePrice;
+                    const stockStatus = this.getStockStatus(product.stock, product.lowStockThreshold);
+                    
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">${product.name}</div>
+                                        <div class="text-sm text-gray-500">${product.code}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    ${product.category}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <span class="stock-indicator stock-${stockStatus}"></span>
+                                    <span class="text-sm font-semibold ${stockStatus === 'low' ? 'text-red-600' : stockStatus === 'medium' ? 'text-orange-600' : 'text-green-600'}">
+                                        ${product.stock}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${this.formatCurrency(stockValue)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    stockStatus === 'low' ? 'bg-red-100 text-red-800' :
+                                    stockStatus === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-green-100 text-green-800'
+                                }">
+                                    ${stockStatus === 'low' ? 'Stock faible' : stockStatus === 'medium' ? 'Stock moyen' : 'Stock élevé'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="stockManager.addStockForProduct('${product.id}')" 
+                                        class="text-green-600 hover:text-green-900 mr-3">
+                                    <i class="fas fa-plus text-sm"></i>
+                                </button>
+                                <button onclick="stockManager.removeStockForProduct('${product.id}')" 
+                                        class="text-red-600 hover:text-red-900">
+                                    <i class="fas fa-minus text-sm"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            filterMovements() {
+                const dateFilter = document.getElementById('movementDateFilter').value;
+                const typeFilter = document.getElementById('movementTypeFilter').value;
+                
+                let filteredMovements = [...this.stockMovements];
+                
+                // Apply date filter
+                if (dateFilter) {
+                    filteredMovements = filteredMovements.filter(movement => 
+                        movement.date.split('T')[0] === dateFilter
+                    );
+                }
+                
+                // Apply type filter
+                if (typeFilter !== 'all') {
+                    filteredMovements = filteredMovements.filter(movement => 
+                        movement.type === typeFilter
+                    );
+                }
+                
+                // Re-render movements with filtered data
+                this.renderFilteredMovements(filteredMovements);
+            }
+
+            renderFilteredMovements(filteredMovements) {
+                const container = document.getElementById('movementsList');
+                
+                if (filteredMovements.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-search text-4xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun mouvement trouvé</h3>
+                            <p class="text-gray-500">Aucun mouvement ne correspond à vos filtres</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort movements by date (newest first)
+                const sortedMovements = filteredMovements.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                container.innerHTML = sortedMovements.map(movement => {
+                    const product = this.products.find(p => p.id === movement.productId);
+                    const movementClass = `movement-${movement.type}`;
+                    const typeBadgeClass = `type-${movement.type}`;
+                    
+                    return `
+                        <div class="movement-item ${movementClass} p-4 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <span class="movement-type-badge ${typeBadgeClass} mr-3">
+                                            ${this.getMovementTypeLabel(movement.type)}
+                                        </span>
+                                        <h4 class="font-semibold text-gray-900">${product ? product.name : 'Produit inconnu'}</h4>
+                                    </div>
+                                    <div class="text-sm text-gray-600 mb-1">
+                                        <span class="font-medium">Quantité:</span> ${movement.quantity}
+                                        ${movement.unitPrice ? ` | <span class="font-medium">Prix unitaire:</span> ${this.formatCurrency(movement.unitPrice)}` : ''}
+                                        ${movement.supplier ? ` | <span class="font-medium">Fournisseur:</span> ${movement.supplier}` : ''}
+                                        ${movement.reference ? ` | <span class="font-medium">Référence:</span> ${movement.reference}` : ''}
+                                    </div>
+                                    ${movement.reason ? `
+                                        <div class="text-sm text-gray-600">
+                                            <span class="font-medium">Motif:</span> ${movement.reason}
+                                        </div>
+                                    ` : ''}
+                                    <div class="text-xs text-gray-500 mt-2">
+                                        ${this.formatDate(movement.date)}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-semibold ${movement.type === 'entry' || movement.type === 'return' ? 'text-green-600' : 'text-red-600'}">
+                                        ${movement.type === 'entry' || movement.type === 'return' ? '+' : '-'}${movement.quantity}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Stock: ${movement.newStock}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            exportMovements() {
+                const exportData = {
+                    company: this.company.name,
+                    exportDate: new Date().toISOString(),
+                    movements: this.stockMovements,
+                    products: this.products
+                };
+
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `mouvements_stock_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                window.gestionStockApp.showNotification('Mouvements exportés avec succès', 'success');
+            }
+
+            saveStockMovements() {
+                localStorage.setItem(`gestionstock_stockMovements_${this.company.id}`, JSON.stringify(this.stockMovements));
+            }
+
+            saveProducts() {
+                localStorage.setItem(`gestionstock_products_${this.company.id}`, JSON.stringify(this.products));
+            }
+
+            generateId() {
+                return 'mov_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            formatCurrency(amount) {
+                return window.gestionStockApp.formatCurrency(amount, this.company.currency);
+            }
+
+            formatDate(date) {
+                return new Date(date).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        }
+
+        // Initialize stock manager
+        let stockManager;
+        document.addEventListener('DOMContentLoaded', () => {
+            stockManager = new StockManager();
+        });
+    </script>
+</body>
+</html>
